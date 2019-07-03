@@ -1,5 +1,5 @@
 # ergoAMDminer
-AMD miner for [ergoplatform.com](ergoplatform.com)
+AMD miner for [ergoplatform.com](https://github.com/ergoplatform)
 
 You can find CUDA miner at:  [CUDA miner](https://github.com/ergoplatform/Autolykos-GPU-miner/tree/master/secp256k1)
 
