@@ -76,13 +76,13 @@ __kernel void FinalPrehashMultSecKey(
 
 
 		//====================================================================//
-
-		cl_uint cv=fn_MadLo(h[0], x[1],0, &r[1]);
+		cl_uint cv;
+		fn_MadLo(h[0], x[1],0, r[1], cv);
 		//asm volatile (
 		  //  "mad.lo.cc.u32 %0, %1, %2, %0;": "+r"(r[1]): "r"(h[0]), "r"(x[1])
 		//);
 
-		 cv=fn_MadHi(h[0],x[1],cv,&r[2]);
+		 fn_MadHi(h[0],x[1],cv,r[2], cv);
 		// asm volatile (
 			// "madc.hi.cc.u32 %0, %1, %2, %0;": "+r"(r[2]): "r"(h[0]), "r"(x[1])
 		 //);
@@ -91,10 +91,10 @@ __kernel void FinalPrehashMultSecKey(
 		for (int j = 3; j < 6; j += 2)
 		{
 
-			cv=fn_MadLo(h[0], x[j],cv, &r[j]);
+			fn_MadLo(h[0], x[j],cv, r[j], cv);
 			//asm volatile ("madc.lo.cc.u32 %0, %1, %2, %0;":"+r"(r[j]): "r"(h[0]), "r"(x[j]));
 
-			cv = fn_MadHi(h[0], x[j], cv, &r[j+1]);
+			fn_MadHi(h[0], x[j], cv, r[j+1], cv);
 			//asm volatile ("madc.hi.cc.u32 %0, %1, %2, %0;":"+r"(r[j + 1]): "r"(h[0]), "r"(x[j]));
 		}
 
@@ -102,13 +102,13 @@ __kernel void FinalPrehashMultSecKey(
 
 
 				//????x[7]
-		cv = fn_MadLo(h[0], x[7], cv, &r[7]);
+		 fn_MadLo(h[0], x[7], cv, r[7], cv);
 		//asm volatile ("madc.lo.cc.u32 %0, %1, %2, %0;": "+r"(r[7]) : "r"(h[0]), "r"(x[7]));
 
 		// initialize r[8]
 
 		r[8] = 0;
-		cv = fn_MadHi(h[0],x[7], cv, &r[8]);
+		fn_MadHi(h[0],x[7], cv, r[8], cv);
 		//asm volatile ("madc.hi.u32 %0, %1, %2, 0;": "=r"(r[8]) : "r"(h[0]), "r"(x[7]));
 
 
@@ -122,20 +122,20 @@ __kernel void FinalPrehashMultSecKey(
 		for (int i = 1; i < NUM_SIZE_32; ++i)
 		{
 			cv = 0;
-			cv = fn_MadLo(h[i], x[0], cv, &r[i]);
+			fn_MadLo(h[i], x[0], cv, r[i], cv);
 			//asm volatile ("mad.lo.cc.u32 %0, %1, %2, %0;":"+r"(r[i]) : "r"(h[i]), "r"(x[0]));
 
-			cv = fn_MadHi(h[i], x[0], cv, &r[i+1]);
+			fn_MadHi(h[i], x[0], cv, r[i+1], cv);
 			//asm volatile ("madc.hi.cc.u32 %0, %1, %2, %0;":"+r"(r[i + 1]) : "r"(h[i]), "r"(x[0]));
 
 //#pragma unroll
 
 			for (int j = 2; j < 8; j += 2)
 			{
-				cv = fn_MadLo(h[i], x[j], cv, &r[i+j]);
+				fn_MadLo(h[i], x[j], cv, r[i+j], cv);
 				//asm volatile ("madc.lo.cc.u32 %0, %1, %2, %0;":"+r"(r[i + j]) : "r"(h[i]), "r"(x[j]));
 
-				cv = fn_MadHi(h[i], x[j], cv, &r[i + j+1]);
+				fn_MadHi(h[i], x[j], cv, r[i + j+1], cv);
 				//asm volatile ("madc.hi.cc.u32 %0, %1, %2, %0;":"+r"(r[i + j + 1]) : "r"(h[i]), "r"(x[j]));
 			}
 
@@ -149,10 +149,10 @@ __kernel void FinalPrehashMultSecKey(
 
 			cv = 0;
 
-			cv = fn_MadLo(h[i], x[1], cv, &r[i + 1]);
+			 fn_MadLo(h[i], x[1], cv, r[i + 1], cv);
 			//asm volatile ("mad.lo.cc.u32 %0, %1, %2, %0;":"+r"(r[i + 1]) : "r"(h[i]), "r"(x[1]));
 			
-			cv = fn_MadHi(h[i], x[1], cv, &r[i +2]);
+			fn_MadHi(h[i], x[1], cv, r[i +2], cv);
 			//asm volatile ("madc.hi.cc.u32 %0, %1, %2, %0;":"+r"(r[i + 2]) : "r"(h[i]), "r"(x[1]));
 
 //#pragma unroll
@@ -160,18 +160,18 @@ __kernel void FinalPrehashMultSecKey(
 			for (int j = 3; j < 6; j += 2)
 			{
 
-				cv = fn_MadLo(h[i], x[j], cv,&r[i + j]);
+				fn_MadLo(h[i], x[j], cv,r[i + j], cv);
 				//asm volatile ("madc.lo.cc.u32 %0, %1, %2, %0;":"+r"(r[i + j]) : "r"(h[i]), "r"(x[j]));
 				
-				cv = fn_MadHi(h[i], x[j], cv, &r[i + j+1]);
+				fn_MadHi(h[i], x[j], cv, r[i + j+1], cv);
 				//asm volatile ("madc.hi.cc.u32 %0, %1, %2, %0;":"+r"(r[i + j + 1]) : "r"(h[i]), "r"(x[j]));
 			}
 
 
-			cv = fn_MadLo(h[i], x[7], cv, &r[i + 7]);
+			 fn_MadLo(h[i], x[7], cv, r[i + 7], cv);
 			//asm volatile ("madc.lo.cc.u32 %0, %1, %2, %0;":"+r"(r[i + 7]) : "r"(h[i]), "r"(x[7]));
 
-			cv = fn_MadHi(h[i], x[7], cv, &r[i + 8]);
+			fn_MadHi(h[i], x[7], cv, r[i + 8], cv);
 			//asm volatile ("madc.hi.u32 %0, %1, %2, %0;":"+r"(r[i + 8]) : "r"(h[i]), "r"(x[7]));
 		}
 
@@ -215,16 +215,16 @@ __kernel void FinalPrehashMultSecKey(
 			
 			cv = 0;
 
-			cv = fn_MadLo(d[0], (cl_uint)q1_s, cv, &med[1]);
+			fn_MadLo(d[0], (cl_uint)q1_s, cv, med[1], cv);
 			//asm volatile ("mad.lo.cc.u32 %0, %1, " q1_s ", %0;": "+r"(med[1]) : "r"(d[0]));
 
-			cv = fn_MadHi(d[0], (cl_uint)q1_s, cv, &med[2]);
+			fn_MadHi(d[0], (cl_uint)q1_s, cv, med[2], cv);
 			//asm volatile ("madc.hi.cc.u32 %0, %1, " q1_s ", %0;": "+r"(med[2]) : "r"(d[0]));
 
-			cv = fn_MadLo(d[0], (cl_uint)q3_s, cv, &med[3]);
+			fn_MadLo(d[0], (cl_uint)q3_s, cv, med[3], cv);
 			//asm volatile ("madc.lo.cc.u32 %0, %1, " q3_s ", %0;": "+r"(med[3]) : "r"(d[0]));
 			med[4] = 0;
-			cv = fn_MadHi(d[0], (cl_uint)q3_s, cv, &med[4]);
+			fn_MadHi(d[0], (cl_uint)q3_s, cv, med[4], cv);
 			//asm volatile ("madc.hi.u32 %0, %1, " q3_s ", 0;": "=r"(med[4]) : "r"(d[0]));
 
 			//printf("%d %d %d %d %d %d %d ", i, med[0], med[1], med[2], med[3], med[4], med[5]);
@@ -234,16 +234,16 @@ __kernel void FinalPrehashMultSecKey(
 
 			cv = 0;
 
-			cv = fn_MadLo(d[1], (cl_uint)q0_s, cv, &med[1]);
+			fn_MadLo(d[1], (cl_uint)q0_s, cv, med[1], cv);
 			//asm volatile ("mad.lo.cc.u32 %0, %1, " q0_s ", %0;": "+r"(med[1]) : "r"(d[1]));
 
-			cv = fn_MadHi(d[1], (cl_uint)q0_s, cv, &med[2]);
+			fn_MadHi(d[1], (cl_uint)q0_s, cv, med[2], cv);
 			//asm volatile ("madc.hi.cc.u32 %0, %1, " q0_s ", %0;": "+r"(med[2]) : "r"(d[1]));
 
-			cv = fn_MadLo(d[1], (cl_uint)q2_s, cv, &med[3]);
+			fn_MadLo(d[1], (cl_uint)q2_s, cv, med[3], cv);
 			//asm volatile ("madc.lo.cc.u32 %0, %1, " q2_s ", %0;": "+r"(med[3]) : "r"(d[1]));
 
-			cv = fn_MadHi(d[1], (cl_uint)q2_s, cv, &med[4]);
+			fn_MadHi(d[1], (cl_uint)q2_s, cv, med[4], cv);
 			//asm volatile ("madc.hi.cc.u32 %0, %1," q2_s", %0;": "+r"(med[4]) : "r"(d[1]));
 
 			med[5] = cv;
@@ -251,16 +251,16 @@ __kernel void FinalPrehashMultSecKey(
 
 			cv = 0;
 
-			cv = fn_MadLo(d[1], (cl_uint)q1_s, cv, &med[2]);
+			fn_MadLo(d[1], (cl_uint)q1_s, cv, med[2], cv);
 			//asm volatile ("mad.lo.cc.u32 %0, %1, " q1_s ", %0;": "+r"(med[2]) : "r"(d[1]));
 
-			cv = fn_MadHi(d[1], (cl_uint)q1_s, cv, &med[3]);
+			fn_MadHi(d[1], (cl_uint)q1_s, cv, med[3], cv);
 			//asm volatile ("madc.hi.cc.u32 %0, %1, " q1_s ", %0;": "+r"(med[3]) : "r"(d[1]));
 
-			cv = fn_MadLo(d[1], (cl_uint)q3_s, cv, &med[4]);
+			fn_MadLo(d[1], (cl_uint)q3_s, cv, med[4], cv);
 			//asm volatile ("madc.lo.cc.u32 %0, %1, " q3_s ", %0;": "+r"(med[4]) : "r"(d[1]));
 
-			cv = fn_MadHi(d[1], (cl_uint)q3_s, cv, &med[5]);
+			fn_MadHi(d[1], (cl_uint)q3_s, cv, med[5], cv);
 			//asm volatile ("madc.hi.u32 %0, %1, " q3_s ", %0;": "+r"(med[5]) : "r"(d[1]));
 
 
@@ -268,7 +268,7 @@ __kernel void FinalPrehashMultSecKey(
 			//  x[i/2 - 2, i/2 - 3, i/2 - 4] -= d * Q
 			//====================================================================//
 
-			cv=fn_Sub(r[i - 8], med[0], 0, &r[i - 8]);
+			fn_Sub(r[i - 8], med[0], 0, r[i - 8], cv);
 
 			
 
@@ -279,15 +279,15 @@ __kernel void FinalPrehashMultSecKey(
 			cl_uint oldcv;
 			for (int j = 1; j < 6; ++j)
 			{
-				cv = fn_Sub(r[i+j - 8], med[j], cv, &r[i+j - 8]);
+				fn_Sub(r[i+j - 8], med[j], cv, r[i+j - 8], cv);
 				//asm volatile ("subc.cc.u32 %0, %0, %1;": "+r"(r[i + j - 8]) : "r"(med[j]));
 			}
 
 	
-				cv = fn_Sub(r[i - 2], 0, cv, &r[i - 2]);
+				fn_Sub(r[i - 2], 0, cv, r[i - 2], cv);
 			//asm volatile ("subc.cc.u32 %0, %0, 0;": "+r"(r[i - 2]));
 
-			cv = fn_Sub(r[i - 1], 0, cv, &r[i - 1]);
+			 fn_Sub(r[i - 1], 0, cv, r[i - 1], cv);
 			//asm volatile ("subc.u32 %0, %0, 0;": "+r"(r[i - 1]));
 
 			//====================================================================//
@@ -300,16 +300,23 @@ __kernel void FinalPrehashMultSecKey(
 
 
 					 
-			cv=fn_Add(r[i - 4], d[0], 0, &r[i - 4]);
+
+			cl_uint a1 = r[i - 4];
+			cl_uint a2 = d[0];
+			cl_uint a3 = 0;
+			cl_uint a4 = cv;
+
+			//cv = fn_Add(r[i - 4], d[0], 0, r[i - 4]);
+			fn_Add(r[i - 4], d[0], 0, r[i - 4], cv);
 			//asm volatile ("add.cc.u32 %0, %0, %1;": "+r"(r[i - 4]) : "r"(d[0]));
 
-			cv = fn_Add(r[i - 3], d[1], cv, &r[i - 3]);
+			fn_Add(r[i - 3], d[1], cv, r[i - 3], cv);
 			//asm volatile ("addc.cc.u32 %0, %0, %1;": "+r"(r[i - 3]) : "r"(d[1]));
 
-			cv = fn_Add(r[i - 2], carry, cv, &r[i - 2]);
+			fn_Add(r[i - 2], carry, cv, r[i - 2], cv);
 			//asm volatile ("addc.cc.u32 %0, %0, %1;": "+r"(r[i - 2]) : "r"(carry));
 
-			cv = fn_Add(r[i - 1],0, cv, &r[i - 1]);
+			fn_Add(r[i - 1],0, cv, r[i - 1], cv);
 			//asm volatile ("addc.u32 %0, %0, 0;": "+r"(r[i - 1]));
 
 
@@ -321,19 +328,19 @@ __kernel void FinalPrehashMultSecKey(
 		//  Last 256 bit correction
 		//====================================================================//
 
-		cv = fn_Sub(r[0], (cl_uint)q0_s, 0, &r[0]);
+		 fn_Sub(r[0], (cl_uint)q0_s, 0, r[0], cv);
 		//asm volatile ("sub.cc.u32 %0, %0, " q0_s ";": "+r"(r[0]));
 		
-		cv = fn_Sub(r[1], (cl_uint)q1_s, cv, &r[1]);
+		fn_Sub(r[1], (cl_uint)q1_s, cv, r[1], cv);
 		//asm volatile ("subc.cc.u32 %0, %0, " q1_s ";": "+r"(r[1]));
 		
-		cv = fn_Sub(r[2], (cl_uint)q2_s, cv, &r[2]);
+		fn_Sub(r[2], (cl_uint)q2_s, cv, r[2], cv);
 		//asm volatile ("subc.cc.u32 %0, %0, " q2_s ";": "+r"(r[2]));
 
-		cv = fn_Sub(r[3], (cl_uint)q3_s, cv, &r[3]);
+		fn_Sub(r[3], (cl_uint)q3_s, cv, r[3], cv);
 		//asm volatile ("subc.cc.u32 %0, %0, " q3_s ";": "+r"(r[3]));
 
-		cv = fn_Sub(r[4], (cl_uint)q4_s, cv, &r[4]);
+		fn_Sub(r[4], (cl_uint)q4_s, cv, r[4], cv);
 		//asm volatile ("subc.cc.u32 %0, %0, " q4_s ";": "+r"(r[4]));
 
 
@@ -341,14 +348,14 @@ __kernel void FinalPrehashMultSecKey(
 
 		for (int j = 5; j < 8; ++j)
 		{
-			cv = fn_Sub(r[j], (cl_uint)qhi_s, cv, &r[j]);
+			  fn_Sub(r[j], (cl_uint)qhi_s, cv, r[j], cv);
 			//asm volatile ("subc.cc.u32 %0, %0, " qhi_s ";": "+r"(r[j]));
 		}
 
 
 		//====================================================================//
 
-		cv = fn_Sub(0,0, cv, &carry);
+		  fn_Sub(0,0, cv, carry, cv);
 		//asm volatile ("subc.u32 %0, 0, 0;": "=r"(carry));
 
 
@@ -358,29 +365,29 @@ __kernel void FinalPrehashMultSecKey(
 
 					 //return ;
 
-		cv = fn_MadLo(carry, (cl_uint)q0_s, 0, &r[0]);
+		  fn_MadLo(carry, (cl_uint)q0_s, 0, r[0], cv);
 		//asm volatile ("mad.lo.cc.u32 %0, %1, " q0_s ", %0;": "+r"(r[0]) : "r"(carry));
 		
-		cv = fn_MadLo(carry, (cl_uint)q1_s, cv, &r[1]);
+		  fn_MadLo(carry, (cl_uint)q1_s, cv, r[1], cv);
 		//asm volatile ("madc.lo.cc.u32 %0, %1, " q1_s ", %0;": "+r"(r[1]) : "r"(carry));
 		
-		cv = fn_MadLo(carry, (cl_uint)q2_s, cv, &r[2]);
+		  fn_MadLo(carry, (cl_uint)q2_s, cv, r[2], cv);
 		//asm volatile ("madc.lo.cc.u32 %0, %1, " q2_s ", %0;": "+r"(r[2]) : "r"(carry));
 
-		cv = fn_MadLo(carry, (cl_uint)q3_s, cv, &r[3]);
+		  fn_MadLo(carry, (cl_uint)q3_s, cv, r[3], cv);
 		//asm volatile ("madc.lo.cc.u32 %0, %1, " q3_s ", %0;": "+r"(r[3]) : "r"(carry));
 		
-		cv = fn_MadLo(carry, (cl_uint)q4_s, cv, &r[4]);
+		  fn_MadLo(carry, (cl_uint)q4_s, cv, r[4], cv);
 		//asm volatile ("madc.lo.cc.u32 %0, %1, " q4_s ", %0;": "+r"(r[4]) : "r"(carry));
 
 #pragma unroll
 		for (int j = 5; j < 7; ++j)
 		{
-			cv = fn_MadLo(carry, (cl_uint)qhi_s, cv, &r[j]);
+			  fn_MadLo(carry, (cl_uint)qhi_s, cv, r[j], cv);
 			//asm volatile ("madc.lo.cc.u32 %0, %1, " qhi_s ", %0;": "+r"(r[j]) : "r"(carry));
 		}
 
-		cv = fn_MadLo(carry, (cl_uint)qhi_s, cv, &r[7]);
+		  fn_MadLo(carry, (cl_uint)qhi_s, cv, r[7], cv);
 		//asm volatile ("madc.lo.u32 %0, %1, " qhi_s ", %0;": "+r"(r[7]) : "r"(carry));
 
 		//====================================================================//
@@ -706,11 +713,11 @@ __kernel void InitPrehash(
         // pk || mes || w
         // 2 * PK_SIZE_8 + NUM_SIZE_8 bytes
         //cl_uint * rem = (cl_uint __local * ) sdata;
-		cl_uint __local * rem = sdata;
-//		for (int rr = 0; rr<ROUND_NP_SIZE_32; rr++)
-//		{
-//			rem[rr] = sdata[rr] ;
-//		}		
+		cl_uint rem[2 * PK_SIZE_8 + NUM_SIZE_8];// = sdata;
+		for (int rr = 0; rr< 2 * PK_SIZE_8 + NUM_SIZE_8; rr++)
+		{
+			rem[rr] = sdata[rr] ;
+		}		
 
 
         // local memory
@@ -788,7 +795,7 @@ __kernel void InitPrehash(
 #pragma unroll
         for (j = 0; ctx->c < BUF_SIZE_8 && j < 2 * PK_SIZE_8 + NUM_SIZE_8; ++j)
         {
-            ctx->b[ctx->c++] = ((const uint8_t __local *)rem)[j];
+            ctx->b[ctx->c++] = ((const uint8_t *)rem)[j];
         }
 
 
@@ -799,7 +806,7 @@ __kernel void InitPrehash(
            
             while (ctx->c < BUF_SIZE_8 && j < 2 * PK_SIZE_8 + NUM_SIZE_8)
             {
-                ctx->b[ctx->c++] = ((const uint8_t __local *)rem)[j++];
+                ctx->b[ctx->c++] = ((const uint8_t *)rem)[j++];
             }
         }
 
