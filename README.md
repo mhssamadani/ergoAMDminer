@@ -8,8 +8,8 @@ Please note that this is the first release of the AMD miner and needs some optim
 The code is based on opencl 2.0 so it cannot be used for nvidia gpus.
 
 These files must be in the same folder as .exe file:
-  * Miningkernel.dat
-  * Prehashkernel.dat
+  * Miningkernel.cl
+  * Prehashkernel.cl
   * Ocldecs.h
   * Ocldefs.h
   * Libcurl.dll
