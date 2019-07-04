@@ -55,3 +55,9 @@ Additional Dependencies:
 
 ![](https://github.com/amin63moradi/ergoAMDminer/blob/master/img/AddDep.png)
 
+
+in ErgoOpenCL.cpp file comment 
+
+*#define _TEST_* 
+
+for build miner or uncomment for build tester
