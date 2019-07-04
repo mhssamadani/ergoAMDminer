@@ -41,7 +41,7 @@ typedef unsigned __int32        cl_uint;
 //  PARAMETERS: Heuristic prehash kernel parameters
 ////////////////////////////////////////////////////////////////////////////////
 // number of nonces per thread
-#define NONCES_PER_THREAD  1
+#define NONCES_PER_THREAD  1   //allllllllwways
 
 // total number of nonces per iteration
 // #define NONCES_PER_ITER    0x200000 // 2^22
@@ -49,7 +49,7 @@ typedef unsigned __int32        cl_uint;
 //
 // kernel block size
 // #define BLOCK_DIM          64
-#define BLOCK_DIM          64 //aminM
+#define BLOCK_DIM        32// (NONCES_PER_ITER/1024)// 64 //aminM
 ////////////////////////////////////////////////////////////////////////////////
 // Memory compatibility checks
 // should probably be now more correctly set
@@ -577,20 +577,6 @@ do                                                                             \
 }                                                                              \
 while (0)
 
-
-
-////////////////////////////////aminm eshagh//////////////////////////////////////
-#define ASM_ADD(Val1,Val2,cv,Result,ret)                                           \
-do                                                                             \
-{                                                                              \
-    cl_ulong tmp = (cl_ulong)Val1 + (cl_ulong)Val2 + (cl_ulong)cv;             \
-    Result = tmp;                                                       \
-    ret = (tmp >> 32);                                                                           \
-                                                                                 \
-}                                                                              \
-while (0)
-
-////////////////////////////////aminm eshagh//////////////////////////////////////
 
 
 
