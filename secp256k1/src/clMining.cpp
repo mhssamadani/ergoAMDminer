@@ -5,7 +5,7 @@ MiningClass::MiningClass(CLWarpper *cll)
 
 	const  string buildOptions = "-I .";
 	_sleep(100);
-	program = cl->buildProgramFromFile("MiningKernel.dat", buildOptions);
+	program = cl->buildProgramFromFile("MiningKernel.cl", buildOptions);
 
 	int tr;
 	tr = 0;

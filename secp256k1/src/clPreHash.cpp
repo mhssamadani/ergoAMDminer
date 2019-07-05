@@ -4,7 +4,7 @@ PreHashClass::PreHashClass(CLWarpper *cll)
 	cl = cll;
 
 	const  string buildOptions = "-O0 -w -I .";
-	program = cl->buildProgramFromFile("PreHashKernel.dat", buildOptions);
+	program = cl->buildProgramFromFile("PreHashKernel.cl", buildOptions);
 
 }
 PreHashClass::~PreHashClass()
