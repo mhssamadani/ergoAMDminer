@@ -34,17 +34,17 @@ public:
 	// block mining iteration
 	void hBlockMining(
 		// boundary for puzzle
-		const cl_uint * bound,
+		cl_mem bound,
 		// data: pk || mes || w || padding || x || sk || ctx
-		const cl_uint * data,
+		cl_mem data,
 		// nonce base
 		const cl_ulong base,
 		// precalculated hashes
-		const cl_uint * hashes,
+		cl_mem hashes,
 		// results
-		cl_uint * res,
+		cl_mem res,
 		// indices of valid solutions
-		cl_uint * valid
+		cl_mem valid
 		);
 
 };

@@ -80,16 +80,17 @@ void PreHashClass::hFinalPrehash(
 // hashes by secret key multiplication modulo Q 
 void PreHashClass::hFinalPrehashMultSecKey(
 	// data: pk || mes || w || padding || x || sk
-	const cl_uint * data,
+	cl_mem data,
 	// hashes
-	cl_uint * hashes
+	cl_mem hashes
 	)
 {
 
 	cl_kernel kernel = program->getKernel("FinalPrehashMultSecKey");
 
-	cl->checkError(clSetKernelArgSVMPointer(kernel, 0, data));
-	cl->checkError(clSetKernelArgSVMPointer(kernel, 1, hashes));
+
+	cl->checkError(clSetKernelArg(kernel, 0, sizeof(cl_mem), &data));
+	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), &hashes));
 
 	// Run the kernel.
 	cout << "\n Running kernel (FinalPrehashMultSecKey) " << flush;
@@ -111,19 +112,17 @@ void PreHashClass::hFinalPrehashMultSecKey(
 int PreHashClass::Prehash(
 	const int keep,
 	// data: pk || mes || w || padding || x || sk
-	const cl_uint * data,
+	cl_mem  data,
 	// unfinalized hashes contexts
 	/*uctx_t * uctxs,*/
 	// hashes
-	cl_uint * hashes,
+	cl_mem   hashes,
 	// indices of invalid range hashes
-	cl_uint * invalid
+	cl_mem   invalid
 	)
 {
 
 	cl_uint len = N_LEN;
-
-	cl_uint * ind = invalid;
 
 
 	if (keep)
@@ -154,9 +153,9 @@ int PreHashClass::Prehash(
 	{
 		cl_kernel kernel = program->getKernel("InitPrehash");
 
-		cl->checkError(clSetKernelArgSVMPointer(kernel, 0, data));
-		cl->checkError(clSetKernelArgSVMPointer(kernel, 1, hashes));
-		cl->checkError(clSetKernelArgSVMPointer(kernel, 2, invalid));
+		cl->checkError(clSetKernelArg(kernel, 0, sizeof(cl_mem), &data));
+		cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), &hashes));
+		cl->checkError(clSetKernelArg(kernel, 2, sizeof(cl_mem), &invalid));
 
 
 

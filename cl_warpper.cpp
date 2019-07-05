@@ -1,4 +1,5 @@
 
+
 #include"cl_warpper.h"
 
 #include "secp256k1\include\OCLdefs.h"
@@ -321,6 +322,37 @@ int CLWarpper::convertToString(const char *filename, std::string& s)
 //	cout << "Error: failed to open file\n:" << filename << endl;
 	return -1;
 }
+cl_mem CLWarpper::Createbuffer(size_t size, cl_mem_flags flags)
+{
+	cl_mem buff = clCreateBuffer(*context, flags, size, NULL, NULL);
+	return buff;
+}
+cl_int CLWarpper::CopyBuffer(cl_mem clBuff, void* cpBuff , size_t size, bool cl2cp)
+{
+	cl_int err = 0;
+
+	if (cl2cp)
+	{
+		err = clEnqueueReadBuffer(*queue, clBuff, CL_TRUE, 0, size, cpBuff, 0, NULL, NULL);
+		if (err != CL_SUCCESS)
+		{
+			printf("Error: Failed to read output array! %d\n", err);
+			exit(1);
+		}
+
+	}
+	else
+	{
+		err = clEnqueueWriteBuffer(*queue, clBuff, CL_TRUE, 0, size, cpBuff, 0, NULL, NULL);
+		if (err != CL_SUCCESS)
+		{
+			printf("Error: Failed to write to source array!\n");
+			exit(1);
+		}
+
+	}
+	return err;
+}
 
 void* CLWarpper::CreateSVMbuffer(uint32_t size , bool readOnly )
 {
@@ -375,7 +407,7 @@ std::shared_ptr<CLProgram> CLWarpper::buildProgramFromFile(const char *filename,
 	checkError(error);
 	build_log[log_size] = '\0';
 	std::string buildLogMessage = "";
-	if (log_size > 2  && log_size < 200) {
+	if (log_size > 2  && log_size < 100) {
 		buildLogMessage = build_log;
 		std::cout << buildLogMessage << std::endl;
 	}

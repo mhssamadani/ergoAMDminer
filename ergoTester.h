@@ -1,10 +1,10 @@
 /**********************************************************************
-Copyright ©2015 Advanced Micro Devices, Inc. All rights reserved.
+Copyright Â©2015 Advanced Micro Devices, Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 
-•	Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
-•	Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or
+â€¢	Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+â€¢	Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or
  other materials provided with the distribution.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -134,71 +134,75 @@ int TestSolutions(
 	// boundary for puzzle
 	// ~0 MiB
 	//cl_uint * bound_d;
-	cl_uint* bound_d = (cl_uint*)clw->CreateSVMbuffer((NUM_SIZE_8 + DATA_SIZE_8) * sizeof(char), false);
-
+	cl_mem bound_d = clw->Createbuffer((NUM_SIZE_8 + DATA_SIZE_8) * sizeof(char), CL_MEM_READ_WRITE);
+	cl_uint* hbound_d = (cl_uint *)malloc((NUM_SIZE_8 + DATA_SIZE_8) * sizeof(char));
 	// data: pk || mes || w || padding || x || sk || ctx
 	// (2 * PK_SIZE_8 + 2 + 3 * NUM_SIZE_8 + 212 + 4) bytes // ~0 MiB
 	//aminM  //cl_uint * data_d = bound_d + NUM_SIZE_32;
-	cl_uint* data_d = (cl_uint*)clw->CreateSVMbuffer((2 * PK_SIZE_8 + 2 + 3 * NUM_SIZE_8 + 212 + 4)  * sizeof(char), false);
-
+	cl_mem data_d = clw->Createbuffer((2 * PK_SIZE_8 + 2 + 3 * NUM_SIZE_8 + 212 + 4)  * sizeof(char), CL_MEM_READ_WRITE);
+	cl_uint* hdata_d = (cl_uint*)malloc((2 * PK_SIZE_8 + 2 + 3 * NUM_SIZE_8 + 212 + 4) * sizeof(char));
 	// precalculated hashes
 	// N_LEN * NUM_SIZE_8 bytes // 2 GiB
 	//cl_uint * hashes_d;
-	cl_uint* hashes_d = (cl_uint*)clw->CreateSVMbuffer((cl_uint)N_LEN * NUM_SIZE_8  * sizeof(char), false);
-
+	cl_mem hashes_d = clw->Createbuffer((cl_uint)N_LEN * NUM_SIZE_8  * sizeof(char) , CL_MEM_READ_WRITE);
+	cl_uint* hhashes_d = (cl_uint*)malloc((cl_uint)N_LEN * NUM_SIZE_8 * sizeof(char));
 	// WORKSPACE_SIZE_8 bytes
 	// potential solutions of puzzle
 	//cl_uint * res_d;
-	cl_uint* res_d = (cl_uint*)clw->CreateSVMbuffer((cl_uint)WORKSPACE_SIZE_8  * sizeof(char), false);
-
+	cl_mem res_d = clw->Createbuffer((cl_uint)WORKSPACE_SIZE_8  * sizeof(char), CL_MEM_WRITE_ONLY);
+	cl_uint* hres_d = (cl_uint*)malloc((cl_uint)WORKSPACE_SIZE_8 * sizeof(char));
 	// indices of unfinalized hashes
-	cl_uint* indices_d = (cl_uint*)clw->CreateSVMbuffer(sizeof(cl_uint), false);
-
+	cl_mem indices_d = clw->Createbuffer(sizeof(cl_uint), CL_MEM_READ_WRITE);
+	cl_uint* hindices_d = (cl_uint*)malloc(sizeof(cl_uint));
 	//uctx_t * uctxs_d = NULL;
-	uctx_t * uctxs_d;
-
+	cl_mem uctxs_d;
+	uctx_t* huctxs_d;
 	if (info->keepPrehash)
 	{
-		uctxs_d = (uctx_t*)clw->CreateSVMbuffer((cl_uint)N_LEN * sizeof(uctx_t), false);
+		uctxs_d = clw->Createbuffer((cl_uint)N_LEN * sizeof(uctx_t), CL_MEM_READ_WRITE);
+		huctxs_d = (uctx_t*)malloc((cl_uint)N_LEN * sizeof(uctx_t));
 	}
 
-	cl_uint * ldata = (cl_uint *)clw->CreateSVMbuffer((cl_uint)118 * sizeof(uctx_t), false);
+	cl_mem ldata = clw->Createbuffer((cl_uint)118 * sizeof(uctx_t), CL_MEM_READ_WRITE);
+	cl_uint* hldata = (cl_uint*)malloc((cl_uint)118 * sizeof(uctx_t));
 
 	//========================================================================//
 	//  Data transfer form host to device
 	//========================================================================//
 	// copy boundary
-	cl_int ret = clEnqueueSVMMemcpy(*clw->queue, CL_TRUE, bound_d, info->bound, NUM_SIZE_8, 0, NULL, NULL);
+	memcpy(hbound_d, (void*)info->bound, NUM_SIZE_8);
 
 	//// copy public key
-	ret = clEnqueueSVMMemcpy(*clw->queue, CL_TRUE, data_d, info->pk, PK_SIZE_8, 0, NULL, NULL);
+	memcpy(hdata_d, (void*)info->pk, PK_SIZE_8);
 
 	//// copy message
-	ret = clEnqueueSVMMemcpy(*clw->queue, CL_TRUE, (uint8_t *)data_d + PK_SIZE_8, info->mes, NUM_SIZE_8, 0, NULL, NULL);
+	memcpy((uint8_t*)hdata_d + PK_SIZE_8, info->mes, NUM_SIZE_8);
 
 	//// copy one time public key
-	ret = clEnqueueSVMMemcpy(*clw->queue, CL_TRUE, (uint8_t *)data_d + PK_SIZE_8 + NUM_SIZE_8, w, PK_SIZE_8, 0, NULL, NULL);
+	memcpy((uint8_t*)hdata_d + PK_SIZE_8 + NUM_SIZE_8, (void*)w, PK_SIZE_8);
 
 	//// copy one time secret key
-	ret = clEnqueueSVMMemcpy(*clw->queue, CL_TRUE, data_d + COUPLED_PK_SIZE_32 + NUM_SIZE_32, x, NUM_SIZE_8, 0, NULL, NULL);
+	memcpy((cl_uint*)hdata_d + COUPLED_PK_SIZE_32 + NUM_SIZE_32, (void*)x, NUM_SIZE_8);
 
 	unsigned long b3 = COUPLED_PK_SIZE_32 + NUM_SIZE_32;
 	//ret = clEnqueueWriteBuffer(commandQueue, (cl_mem)((cl_uint *)data_d+b3) , CL_TRUE, 0, NUM_SIZE_8, x, 0, NULL, NULL);
 
 	//// copy secret key
-	ret = clEnqueueSVMMemcpy(*clw->queue, CL_TRUE, data_d + COUPLED_PK_SIZE_32 + 2 * NUM_SIZE_32, info->sk, NUM_SIZE_8, 0, NULL, NULL);
+	memcpy((cl_uint*)hdata_d + COUPLED_PK_SIZE_32 + 2 * NUM_SIZE_32, (void*)info->sk, NUM_SIZE_8);
 
 
+	cl_int ret = clw->CopyBuffer(bound_d, hbound_d, (NUM_SIZE_8 + DATA_SIZE_8) * sizeof(char), false);
+	clw->CopyBuffer(data_d, hdata_d, (2 * PK_SIZE_8 + 2 + 3 * NUM_SIZE_8 + 212 + 4) * sizeof(char), false);
 	////========================================================================//
 	////  Test solutions
 	////========================================================================//
 	cl_ulong base = 0;
 	PreHashClass *ph = new PreHashClass(clw);
 
-	if (info->keepPrehash)
-	{
-		ph->hUncompleteInitPrehash(data_d, uctxs_d);
-	}
+	//if (info->keepPrehash)
+	//{
+	//	ph->hUncompleteInitPrehash(data_d, uctxs_d);
+	//}
 
 
 
@@ -209,8 +213,9 @@ int TestSolutions(
 
 
 	//// copy context
-	ret = clEnqueueSVMMemcpy(*clw->queue, CL_TRUE, data_d + COUPLED_PK_SIZE_32 + 3 * NUM_SIZE_32, &ctx_h, sizeof(ctx_t), 0, NULL, NULL);
-
+	ret = clw->CopyBuffer(data_d, hdata_d, (2 * PK_SIZE_8 + 2 + 3 * NUM_SIZE_8 + 212 + 4) * sizeof(char), true);
+	memcpy(hdata_d + COUPLED_PK_SIZE_32 + 3 * NUM_SIZE_32, &ctx_h, sizeof(ctx_t));
+	ret = clw->CopyBuffer(data_d, hdata_d, (2 * PK_SIZE_8 + 2 + 3 * NUM_SIZE_8 + 212 + 4) * sizeof(char), false);
 
 	//// calculate solution candidates
 	min->hBlockMining(bound_d, data_d, base, hashes_d, res_d, indices_d);
@@ -220,9 +225,8 @@ int TestSolutions(
 	uint32_t solFound = 0;
 	uint32_t nonce;
 	// copy results to host
-	ret = clEnqueueSVMMemcpy(*clw->queue, CL_TRUE, res_h, res_d, NUM_SIZE_8 ,0, NULL, NULL);
-
-	ret = clEnqueueSVMMemcpy(*clw->queue, CL_TRUE, &nonce, indices_d, sizeof(cl_uint) ,0, NULL, NULL);
+	ret = clw->CopyBuffer(res_d, res_h, NUM_SIZE_8, true);
+	ret = clw->CopyBuffer(indices_d, &nonce, sizeof(cl_uint), true);
 
 	LOG(INFO) << "Found nonce: " << nonce - 1;
 	if (nonce != 0x3381BF)
@@ -234,13 +238,13 @@ int TestSolutions(
 	////========================================================================//
 	////  Device memory deallocation
 	////========================================================================//
-	clSVMFree(*clw->context, bound_d);
-	clSVMFree(*clw->context, hashes_d);
-	clSVMFree(*clw->context, res_d);
+	clReleaseMemObject(bound_d);
+	clReleaseMemObject( hashes_d);
+	clReleaseMemObject(res_d);
 
 	if (info->keepPrehash) 
 	{
-		clSVMFree(*clw->context, uctxs_d);
+		clReleaseMemObject(uctxs_d);
 	}
 
 	LOG(INFO) << "Solutions test passed\n";
@@ -272,59 +276,67 @@ int TestPerformance(
 	//========================================================================//
 	// boundary for puzzle
 	// ~0 MiB
-	cl_uint* bound_d = (cl_uint*)clw->CreateSVMbuffer((NUM_SIZE_8 + DATA_SIZE_8) * sizeof(char), false);
-
+	//cl_uint * bound_d;
+	cl_mem bound_d = clw->Createbuffer((NUM_SIZE_8 + DATA_SIZE_8) * sizeof(char), CL_MEM_READ_WRITE);
+	cl_uint* hbound_d = (cl_uint*)malloc((NUM_SIZE_8 + DATA_SIZE_8) * sizeof(char));
 	// data: pk || mes || w || padding || x || sk || ctx
 	// (2 * PK_SIZE_8 + 2 + 3 * NUM_SIZE_8 + 212 + 4) bytes // ~0 MiB
-	cl_uint* data_d = (cl_uint*)clw->CreateSVMbuffer((2 * PK_SIZE_8 + 2 + 3 * NUM_SIZE_8 + 212 + 4) * sizeof(char), false);
-
+	//aminM  //cl_uint * data_d = bound_d + NUM_SIZE_32;
+	cl_mem data_d = clw->Createbuffer((2 * PK_SIZE_8 + 2 + 3 * NUM_SIZE_8 + 212 + 4) * sizeof(char), CL_MEM_READ_WRITE);
+	cl_uint* hdata_d = (cl_uint*)malloc((2 * PK_SIZE_8 + 2 + 3 * NUM_SIZE_8 + 212 + 4) * sizeof(char));
 	// precalculated hashes
 	// N_LEN * NUM_SIZE_8 bytes // 2 GiB
-	cl_uint hhhh = (cl_uint)N_LEN;
-	cl_uint ttt = NUM_SIZE_8 * sizeof(char);
-	cl_uint uuu = hhhh * ttt;
-	cl_uint* hashes_d = (cl_uint*)clw->CreateSVMbuffer(uuu/*(cl_uint)N_LEN * NUM_SIZE_8  * sizeof(char)*/, false);
-
+	//cl_uint * hashes_d;
+	cl_mem hashes_d = clw->Createbuffer((cl_uint)N_LEN * NUM_SIZE_8 * sizeof(char), CL_MEM_READ_WRITE);
+	cl_uint* hhashes_d = (cl_uint*)malloc((cl_uint)N_LEN * NUM_SIZE_8 * sizeof(char));
 	// WORKSPACE_SIZE_8 bytes
 	// potential solutions of puzzle
-	cl_uint* res_d = (cl_uint*)clw->CreateSVMbuffer((cl_uint)WORKSPACE_SIZE_8 * sizeof(char), false);
-
+	//cl_uint * res_d;
+	cl_mem res_d = clw->Createbuffer((cl_uint)WORKSPACE_SIZE_8 * sizeof(char), CL_MEM_WRITE_ONLY);
+	cl_uint* hres_d = (cl_uint*)malloc((cl_uint)WORKSPACE_SIZE_8 * sizeof(char));
 	// indices of unfinalized hashes
-	cl_uint* indices_d = (cl_uint*)clw->CreateSVMbuffer(sizeof(cl_uint), false);
-
-	uctx_t* uctxs_d;
-
+	cl_mem indices_d = clw->Createbuffer(sizeof(cl_uint), CL_MEM_READ_WRITE);
+	cl_uint* hindices_d = (cl_uint*)malloc(sizeof(cl_uint));
+	//uctx_t * uctxs_d = NULL;
+	cl_mem uctxs_d;
+	uctx_t* huctxs_d;
 	if (info->keepPrehash)
 	{
-		uctxs_d = (uctx_t*)clw->CreateSVMbuffer((cl_uint)N_LEN * sizeof(uctx_t), false);
+		uctxs_d = clw->Createbuffer((cl_uint)N_LEN * sizeof(uctx_t), CL_MEM_READ_WRITE);
+		huctxs_d = (uctx_t*)malloc((cl_uint)N_LEN * sizeof(uctx_t));
 	}
 
-	cl_uint* ldata = (cl_uint*)clw->CreateSVMbuffer((cl_uint)118 * sizeof(uctx_t), false);
+	cl_mem ldata = clw->Createbuffer((cl_uint)118 * sizeof(uctx_t), CL_MEM_READ_WRITE);
+	cl_uint* hldata = (cl_uint*)malloc((cl_uint)118 * sizeof(uctx_t));
+
 
 	//========================================================================//
 	//  Data transfer form host to device
 	//========================================================================//
 	// copy boundary
-	cl_int ret = clEnqueueSVMMemcpy(*clw->queue, CL_TRUE, bound_d, info->bound, NUM_SIZE_8, 0, NULL, NULL);
+	memcpy(hbound_d, (void*)info->bound, NUM_SIZE_8);
 
 	//// copy public key
-	ret = clEnqueueSVMMemcpy(*clw->queue, CL_TRUE, data_d, info->pk, PK_SIZE_8, 0, NULL, NULL);
+	memcpy(hdata_d, (void*)info->pk, PK_SIZE_8);
 
 	//// copy message
-	ret = clEnqueueSVMMemcpy(*clw->queue, CL_TRUE, (uint8_t*)data_d + PK_SIZE_8, info->mes, NUM_SIZE_8, 0, NULL, NULL);
+	memcpy((uint8_t*)hdata_d + PK_SIZE_8, info->mes, NUM_SIZE_8);
 
 	//// copy one time public key
-	ret = clEnqueueSVMMemcpy(*clw->queue, CL_TRUE, (uint8_t*)data_d + PK_SIZE_8 + NUM_SIZE_8, w, PK_SIZE_8, 0, NULL, NULL);
+	memcpy((uint8_t*)hdata_d + PK_SIZE_8 + NUM_SIZE_8, (void*)w, PK_SIZE_8);
 
 	//// copy one time secret key
-	ret = clEnqueueSVMMemcpy(*clw->queue, CL_TRUE, data_d + COUPLED_PK_SIZE_32 + NUM_SIZE_32, x, NUM_SIZE_8, 0, NULL, NULL);
+	memcpy((cl_uint*)hdata_d + COUPLED_PK_SIZE_32 + NUM_SIZE_32, (void*)x, NUM_SIZE_8);
 
 	unsigned long b3 = COUPLED_PK_SIZE_32 + NUM_SIZE_32;
+	//ret = clEnqueueWriteBuffer(commandQueue, (cl_mem)((cl_uint *)data_d+b3) , CL_TRUE, 0, NUM_SIZE_8, x, 0, NULL, NULL);
 
 	//// copy secret key
-	ret = clEnqueueSVMMemcpy(*clw->queue, CL_TRUE, data_d + COUPLED_PK_SIZE_32 + 2 * NUM_SIZE_32, info->sk, NUM_SIZE_8, 0, NULL, NULL);
+	memcpy((cl_uint*)hdata_d + COUPLED_PK_SIZE_32 + 2 * NUM_SIZE_32, (void*)info->sk, NUM_SIZE_8);
 
 
+	cl_int ret = clw->CopyBuffer(bound_d, hbound_d, (NUM_SIZE_8 + DATA_SIZE_8) * sizeof(char), false);
+	clw->CopyBuffer(data_d, hdata_d, (2 * PK_SIZE_8 + 2 + 3 * NUM_SIZE_8 + 212 + 4) * sizeof(char), false);
 	////========================================================================//
 	////  Test solutions
 	////========================================================================//
@@ -354,7 +366,9 @@ int TestPerformance(
 
 
 	//// copy context
-	ret = clEnqueueSVMMemcpy(*clw->queue, CL_TRUE, data_d + COUPLED_PK_SIZE_32 + 3 * NUM_SIZE_32, &ctx_h, sizeof(ctx_t), 0, NULL, NULL);
+	ret = clw->CopyBuffer(data_d, hdata_d, (2 * PK_SIZE_8 + 2 + 3 * NUM_SIZE_8 + 212 + 4) * sizeof(char), true);
+	memcpy(hdata_d + COUPLED_PK_SIZE_32 + 3 * NUM_SIZE_32, &ctx_h, sizeof(ctx_t));
+	ret = clw->CopyBuffer(data_d, hdata_d, (2 * PK_SIZE_8 + 2 + 3 * NUM_SIZE_8 + 212 + 4) * sizeof(char), false);
 
 	LOG(INFO) << "BlockMining now for 1 minute";
 	ms = std::chrono::milliseconds::zero();
@@ -372,7 +386,8 @@ int TestPerformance(
 		//// calculate solution candidates
 		min->hBlockMining(bound_d, data_d, base, hashes_d, res_d, indices_d);
 
-		ret = clEnqueueSVMMemcpy(*clw->queue, CL_TRUE, &nonce, indices_d, sizeof(cl_uint), 0, NULL, NULL);
+		ret = clw->CopyBuffer(indices_d, &nonce, sizeof(cl_uint), true);
+
 		if (nonce != 0) ++sum;
 
 		memset(indices_d, 0, sizeof(uint32_t));
@@ -389,13 +404,13 @@ int TestPerformance(
 	////========================================================================//
 	////  Device memory deallocation
 	////========================================================================//
-	clSVMFree(*clw->context, bound_d);
-	clSVMFree(*clw->context, hashes_d);
-	clSVMFree(*clw->context, res_d);
+	clReleaseMemObject(bound_d);
+	clReleaseMemObject(hashes_d);
+	clReleaseMemObject(res_d);
 
 	if (info->keepPrehash)
 	{
-		clSVMFree(*clw->context, uctxs_d);
+		clReleaseMemObject(uctxs_d);
 	}
 
 	LOG(INFO) << "Found " << sum << " solutions";
@@ -621,6 +636,9 @@ int testErgo(int argc, char* argv[])
 	//========================================================================//
 	//  Run solutions correctness tests
 	//========================================================================//
+
+
+
 	if (NONCES_PER_ITER <= 0x3D5B84)
 	{
 		LOG(INFO) << "Need WORKSPACE value for at least 4021125,"
@@ -648,10 +666,10 @@ int testErgo(int argc, char* argv[])
 	//  Run performance tests
 	//========================================================================//
 //	info.keepPrehash = (freeMem >= MIN_FREE_MEMORY_PREHASH) ? 1 : 0;
+	LOG(INFO) << "Test suite executable is now terminated";
+
 	info.keepPrehash = 0;
 	TestPerformance(&info, x, w);
-
-	LOG(INFO) << "Test suite executable is now terminated";
 
 	return EXIT_SUCCESS;
 

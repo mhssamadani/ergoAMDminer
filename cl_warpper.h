@@ -78,7 +78,8 @@ public:
 
 	std::shared_ptr<CLProgram> buildProgramFromFile(const char *filename, std::string options);
 	void* CreateSVMbuffer(uint32_t size, bool readOnly);
-
+	cl_mem Createbuffer(size_t size, cl_mem_flags flags);
+	cl_int CopyBuffer(cl_mem clBuff, void* cpBuff, size_t size, bool cl2cp);
 
 	int convertToString(const char *filename, std::string& s);
 private:

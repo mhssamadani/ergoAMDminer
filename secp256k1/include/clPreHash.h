@@ -70,22 +70,22 @@ public:
 	// hashes by secret key multiplication modulo Q 
 	void hFinalPrehashMultSecKey(
 		// data: pk || mes || w || padding || x || sk
-		const cl_uint * data,
+		cl_mem data,
 		// hashes
-		cl_uint * hashes
+		cl_mem hashes
 		);
 
 
 	int Prehash(
 		const int keep,
 		// data: pk || mes || w || padding || x || sk
-		const cl_uint * data,
+		cl_mem   data,
 		// unfinalized hashes contexts
 		/*uctx_t * uctxs,*/
 		// hashes
-		cl_uint * hashes,
+		cl_mem   hashes,
 		// indices of invalid range hashes
-		cl_uint * invalid
+		cl_mem   invalid
 		);
 
 };

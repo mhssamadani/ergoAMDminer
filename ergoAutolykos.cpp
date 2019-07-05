@@ -105,44 +105,52 @@ void ergoAutolykos::MinerThread(CLWarpper *clw,int deviceId, info_t * info, std:
 
 	// boundary for puzzle
 	// (2 * PK_SIZE_8 + 2 + 4 * NUM_SIZE_8 + 212 + 4) bytes // ~0 MiB
-	cl_uint* bound_d = (cl_uint*)clw->CreateSVMbuffer((NUM_SIZE_8 + DATA_SIZE_8) * sizeof(char), false);
+	cl_mem bound_d = clw->Createbuffer((NUM_SIZE_8 + DATA_SIZE_8) * sizeof(char), CL_MEM_READ_WRITE);
+	cl_uint* hbound_d = (cl_uint*)malloc((NUM_SIZE_8 + DATA_SIZE_8) * sizeof(char));
 
 	// data: pk || mes || w || padding || x || sk || ctx
 	//cl_uint * data_d = bound_d + NUM_SIZE_32;
-	cl_uint* data_d = (cl_uint*)clw->CreateSVMbuffer((2 * PK_SIZE_8 + 2 + 3 * NUM_SIZE_8 + 212 + 4) * sizeof(char), false);
+	cl_mem data_d = clw->Createbuffer((2 * PK_SIZE_8 + 2 + 3 * NUM_SIZE_8 + 212 + 4) * sizeof(char), CL_MEM_READ_WRITE);
+	cl_uint* hdata_d = (cl_uint*)malloc((2 * PK_SIZE_8 + 2 + 3 * NUM_SIZE_8 + 212 + 4) * sizeof(char));
 
 
 	// precalculated hashes
 	// N_LEN * NUM_SIZE_8 bytes // 2 GiB
-	cl_uint* hashes_d = (cl_uint*)clw->CreateSVMbuffer((cl_uint)N_LEN * NUM_SIZE_8 * sizeof(char), false);
+	cl_mem hashes_d = clw->Createbuffer((cl_uint)N_LEN * NUM_SIZE_8 * sizeof(char), CL_MEM_READ_WRITE);
+	cl_uint* hhashes_d = (cl_uint*)malloc((cl_uint)N_LEN * NUM_SIZE_8 * sizeof(char));
 
 	// WORKSPACE_SIZE_8 bytes // depends on macros, now ~512 MiB
 	// potential solutions of puzzle
-	cl_uint* res_d = (cl_uint*)clw->CreateSVMbuffer( (NUM_SIZE_8 + sizeof(cl_uint)) * sizeof(char), false);
+	cl_mem res_d = clw->Createbuffer((NUM_SIZE_8 + sizeof(cl_uint)) * sizeof(char), CL_MEM_WRITE_ONLY);
+	cl_uint* hres_d = (cl_uint*)malloc((NUM_SIZE_8 + sizeof(cl_uint)) * sizeof(char));
+
 	// indices of unfinalized hashes
-	cl_uint * indices_d = (cl_uint*)clw->CreateSVMbuffer(sizeof(cl_uint) , false);;//   
-	ZeroMemory(indices_d, sizeof(cl_uint));
+	cl_mem indices_d = clw->Createbuffer(sizeof(cl_uint), CL_MEM_READ_WRITE);
+	cl_uint* hindices_d = (cl_uint*)malloc(sizeof(cl_uint));
+	ZeroMemory(hindices_d, sizeof(cl_uint));
+	clw->CopyBuffer(indices_d, hindices_d, sizeof(cl_uint), false);
 
 	// unfinalized hash contexts
 	// if keepPrehash == true // N_LEN * 80 bytes // 5 GiB
-	uctx_t * uctxs_d;
+	cl_mem uctxs_d;
+	uctx_t* huctxs_d;
 	if (info->keepPrehash)
 	{
-		uctxs_d = (uctx_t*)clw->CreateSVMbuffer((cl_uint)N_LEN * sizeof(uctx_t), false);
+		uctxs_d = clw->Createbuffer((cl_uint)N_LEN * sizeof(uctx_t), CL_MEM_READ_WRITE);
+		huctxs_d = (uctx_t*)malloc((cl_uint)N_LEN * sizeof(uctx_t));
 	}
-
 
 
 	//========================================================================//
 	//  Key-pair transfer form host to device
 	//========================================================================//
 	// copy public key
-	cl_int ret = clEnqueueSVMMemcpy(*clw->queue, CL_TRUE, data_d, pk_h, PK_SIZE_8, 0, NULL, NULL);
+	memcpy(hdata_d, (void*)pk_h, PK_SIZE_8);
 
 	// copy secret key
-	ret = clEnqueueSVMMemcpy(*clw->queue, CL_TRUE, data_d + COUPLED_PK_SIZE_32 + 2 * NUM_SIZE_32, sk_h, NUM_SIZE_8, 0, NULL, NULL);
+	memcpy(hdata_d + COUPLED_PK_SIZE_32 + 2 * NUM_SIZE_32, (void *)sk_h, NUM_SIZE_8);
 
-
+	clw->CopyBuffer(data_d, hdata_d, (2 * PK_SIZE_8 + 2 + 3 * NUM_SIZE_8 + 212 + 4) * sizeof(char), false);
 	//========================================================================//
 	//  Autolykos puzzle cycle
 	//========================================================================//
@@ -152,11 +160,11 @@ void ergoAutolykos::MinerThread(CLWarpper *clw,int deviceId, info_t * info, std:
 	MiningClass *min = new MiningClass(clw);
 	
 	// set unfinalized hash contexts if necessary
-	if (keepPrehash)
-	{
-		LOG(INFO) << "Preparing unfinalized hashes on GPU " << deviceId;
-		ph->hUncompleteInitPrehash(data_d, uctxs_d);
-	}
+	//if (keepPrehash)
+	//{
+	//	LOG(INFO) << "Preparing unfinalized hashes on GPU " << deviceId;
+	//	ph->hUncompleteInitPrehash(data_d, uctxs_d);
+	//}
 
 	int cntCycles = 0;
 	int NCycles = 50;
@@ -220,16 +228,20 @@ void ergoAutolykos::MinerThread(CLWarpper *clw,int deviceId, info_t * info, std:
 				<< " copying new data in device memory now";
 
 			// copy boundary
-			ret = clEnqueueSVMMemcpy(*clw->queue, CL_TRUE, bound_d, bound_h, NUM_SIZE_8, 0, NULL, NULL);
+			memcpy(hbound_d, (void*)bound_h, NUM_SIZE_8);
 
 			// copy message
-			ret = clEnqueueSVMMemcpy(*clw->queue, CL_TRUE, ((uint8_t *)data_d + PK_SIZE_8), mes_h, NUM_SIZE_8, 0, NULL, NULL);
+			memcpy((uint8_t*)hdata_d + PK_SIZE_8, mes_h, NUM_SIZE_8);
 
 			// copy one time secret key
-			ret = clEnqueueSVMMemcpy(*clw->queue, CL_TRUE, (data_d + COUPLED_PK_SIZE_32 + NUM_SIZE_32), x_h, NUM_SIZE_8, 0, NULL, NULL);
+			memcpy((cl_uint*)hdata_d + COUPLED_PK_SIZE_32 + NUM_SIZE_32, (void*)x_h, NUM_SIZE_8);
 
 			// copy one time public key
-			ret = clEnqueueSVMMemcpy(*clw->queue, CL_TRUE, ((uint8_t *)data_d + PK_SIZE_8 + NUM_SIZE_8), w_h, PK_SIZE_8, 0, NULL, NULL);
+			memcpy((uint8_t*)hdata_d + PK_SIZE_8 + NUM_SIZE_8, (void*)w_h, PK_SIZE_8);
+
+
+			cl_int ret = clw->CopyBuffer(bound_d, hbound_d, (NUM_SIZE_8 + DATA_SIZE_8) * sizeof(char), false);
+			clw->CopyBuffer(data_d, hdata_d, (2 * PK_SIZE_8 + 2 + 3 * NUM_SIZE_8 + 212 + 4) * sizeof(char), false);
 
 			VLOG(1) << "Starting prehashing with new block data";
 			ph->Prehash(keepPrehash, data_d, /*uctxs_d ,*/hashes_d, res_d);
@@ -239,7 +251,9 @@ void ergoAutolykos::MinerThread(CLWarpper *clw,int deviceId, info_t * info, std:
 			min->InitMining(&ctx_h, (cl_uint*)mes_h, NUM_SIZE_8);
 
 			//// copy context
-			ret = clEnqueueSVMMemcpy(*clw->queue, CL_TRUE, data_d + COUPLED_PK_SIZE_32 + 3 * NUM_SIZE_32, &ctx_h, sizeof(ctx_t), 0, NULL, NULL);
+			ret = clw->CopyBuffer(data_d, hdata_d, (2 * PK_SIZE_8 + 2 + 3 * NUM_SIZE_8 + 212 + 4) * sizeof(char), true);
+			memcpy(hdata_d + COUPLED_PK_SIZE_32 + 3 * NUM_SIZE_32, &ctx_h, sizeof(ctx_t));
+			ret = clw->CopyBuffer(data_d, hdata_d, (2 * PK_SIZE_8 + 2 + 3 * NUM_SIZE_8 + 212 + 4) * sizeof(char), false);
 
 			state = STATE_CONTINUE;
 
@@ -254,21 +268,24 @@ void ergoAutolykos::MinerThread(CLWarpper *clw,int deviceId, info_t * info, std:
 		VLOG(1) << "Trying to find solution";
 
 		// restart iteration if new block was found
-		if (blockId != info->blockId.load()) { continue; }
+		if (blockId != info->blockId.load()) 
+		{ 
+			continue;
+		}
 
 
 		// try to find solution
 		///*
-		LOG(INFO) << "try to find solution";
-		ret = clEnqueueSVMMemcpy(*clw->queue, CL_TRUE, &ind, indices_d, sizeof(cl_uint), 0, NULL, NULL);
+		//LOG(INFO) << "try to find solution";
+		cl_int ret = clw->CopyBuffer(indices_d, &ind, sizeof(cl_uint), true);
+
 		//*/
 
 		// solution found
 		if (ind)
 		{
 			LOG(INFO) << "solution found";
-			ret = clEnqueueSVMMemcpy(*clw->queue, CL_TRUE, res_h, res_d, NUM_SIZE_8, 0, NULL, NULL);
-
+			ret = clw->CopyBuffer(res_d, res_h, NUM_SIZE_8, true);
 
 			*((cl_ulong *)nonce) = base + ind - 1;
 
