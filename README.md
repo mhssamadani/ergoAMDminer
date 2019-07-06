@@ -4,6 +4,7 @@ OpenCL miner for [ergoplatform.com](https://github.com/ergoplatform)
 You can find CUDA miner at:  [CUDA miner](https://github.com/ergoplatform/Autolykos-GPU-miner/tree/master/secp256k1)
 
 Please note that this is the first release of the OpenCL miner and needs some optimization for improved hashrate.
+Update: hashrate is 19Mh/s for rx570-8g
 
 The code is based on opencl 1.2 and tested on RX570.
 
