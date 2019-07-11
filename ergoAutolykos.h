@@ -6,14 +6,14 @@
 
 *******************************************************************************/
 //#include "bip39/include/bip39/bip39.h"
-#include "secp256k1/include/cryptography.h"
-#include "secp256k1/include/definitions.h"
-#include "secp256k1/include/easylogging++.h"
-#include "secp256k1/include/jsmn.h"
-#include "secp256k1/include/clMining.h"
-#include "secp256k1/include/clPreHash.h"
-#include "secp256k1/include/processing.h"
-#include "secp256k1/include/request.h"
+#include "cryptography.h"
+#include "definitions.h"
+#include "easylogging++.h"
+#include "jsmn.h"
+#include "clMining.h"
+#include "clPreHash.h"
+#include "processing.h"
+#include "request.h"
 #include <ctype.h>
 #include <curl/curl.h>
 #include <inttypes.h>

@@ -35,15 +35,12 @@ using namespace std;
 //using namespace std::chrono;
 
 
-#include "secp256k1/include/cryptography.h"
-#include "secp256k1/include/definitions.h"
-#include "secp256k1/include/easylogging++.h"
-//#include "secp256k1/include/mining.h"
-//#include "secp256k1/include/prehash.h"
-//#include "secp256k1/include/reduction.h"
-#include "secp256k1/include/request.h"
-#include "secp256k1/include/clPreHash.h"
-#include "secp256k1/include/clMining.h"
+#include "cryptography.h"
+#include "definitions.h"
+#include "easylogging++.h"
+#include "request.h"
+#include "clPreHash.h"
+#include "clMining.h"
 
 #include <ctype.h>
 #include <inttypes.h>
@@ -431,7 +428,7 @@ void TestNewCrypto()
 	char pkstr[PK_SIZE_4 + 1];
 	uint8_t pk[PK_SIZE_8];
 
-	GenerateSecKeyNew(mnemonic, strlen(mnemonic), sk, skstr, "");
+	GenerateSecKeyNew(mnemonic, strlen(mnemonic), sk, skstr,(char *) "");
 
 
 	if (strncmp(skstr, "392F75AD23278B3CD7B060D900138F20F8CBA89ABB259B5DCF5D9830B49D8E38", NUM_SIZE_4))
