@@ -13,7 +13,7 @@
 #include <stdexcept>
 #include <map>
 #include <memory>
-#include "secp256k1\include\OCLdefs.h"
+#include "OCLdefs.h"
 
 class CLProgram {
 public:
@@ -29,7 +29,7 @@ class CLWarpper {
 public:
 	bool verbose;
 
-	cl_int error;  
+	cl_int error;
 
 	cl_platform_id platform_id;
 	cl_device_id device;
@@ -57,7 +57,7 @@ public:
 	//I would like to choose gpu,so ignore other device
 	static std::shared_ptr<CLWarpper> createForFirstGpu();
 	static std::shared_ptr<CLWarpper> createForIndexedGpu(int gpu);
-	
+
 	static std::shared_ptr<CLWarpper> createForPlatformDeviceIndexes(int platformIndex, int deviceIndex);
 	static std::shared_ptr<CLWarpper> createForPlatformDeviceIds(cl_platform_id platformId, cl_device_id deviceId);
 
@@ -77,7 +77,7 @@ public:
 	bool getSVMcapabilities();
 
 	std::shared_ptr<CLProgram> buildProgramFromFile(const char *filename, std::string options);
-	void* CreateSVMbuffer(uint32_t size, bool readOnly);
+	//void* CreateSVMbuffer(uint32_t size, bool readOnly);
 	cl_mem Createbuffer(size_t size, cl_mem_flags flags);
 	cl_int CopyBuffer(cl_mem clBuff, void* cpBuff, size_t size, bool cl2cp);
 

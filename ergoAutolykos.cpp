@@ -127,7 +127,7 @@ void ergoAutolykos::MinerThread(CLWarpper *clw,int deviceId, info_t * info, std:
 	// indices of unfinalized hashes
 	cl_mem indices_d = clw->Createbuffer(sizeof(cl_uint), CL_MEM_READ_WRITE);
 	cl_uint* hindices_d = (cl_uint*)malloc(sizeof(cl_uint));
-	ZeroMemory(hindices_d, sizeof(cl_uint));
+	memset(hindices_d,0, sizeof(cl_uint));
 	clw->CopyBuffer(indices_d, hindices_d, sizeof(cl_uint), false);
 
 	// unfinalized hash contexts
@@ -158,7 +158,7 @@ void ergoAutolykos::MinerThread(CLWarpper *clw,int deviceId, info_t * info, std:
 	cl_ulong base = 0;
 	PreHashClass *ph = new PreHashClass(clw);
 	MiningClass *min = new MiningClass(clw);
-	
+
 	// set unfinalized hash contexts if necessary
 	//if (keepPrehash)
 	//{
@@ -198,7 +198,7 @@ void ergoAutolykos::MinerThread(CLWarpper *clw,int deviceId, info_t * info, std:
 				);
 		}
 
-		// if solution was found by this thread wait for new block to come 
+		// if solution was found by this thread wait for new block to come
 		if (state == STATE_KEYGEN)
 		{
 			while (info->blockId.load() == blockId) {}
@@ -268,8 +268,8 @@ void ergoAutolykos::MinerThread(CLWarpper *clw,int deviceId, info_t * info, std:
 		VLOG(1) << "Trying to find solution";
 
 		// restart iteration if new block was found
-		if (blockId != info->blockId.load()) 
-		{ 
+		if (blockId != info->blockId.load())
+		{
 			continue;
 		}
 
@@ -297,7 +297,7 @@ void ergoAutolykos::MinerThread(CLWarpper *clw,int deviceId, info_t * info, std:
 			PostPuzzleSolution(to, pkstr, w_h, nonce, res_h);
 
 			state = STATE_KEYGEN;
-			ZeroMemory(indices_d, sizeof(cl_uint));
+			memset(indices_d,0, sizeof(cl_uint));
 		}
 		//else
 		//{
@@ -310,7 +310,7 @@ void ergoAutolykos::MinerThread(CLWarpper *clw,int deviceId, info_t * info, std:
 
 }
 ////////////////////////////////////////////////////////////////////////////////
-//  
+//
 ////////////////////////////////////////////////////////////////////////////////
 int ergoAutolykos::startAutolykos(int argc, char ** argv)
 {
@@ -433,7 +433,7 @@ int ergoAutolykos::startAutolykos(int argc, char ** argv)
 		hashrates[i] = 0;
 	}
 
-	// get first block 
+	// get first block
 	status = EXIT_FAILURE;
 	while (status != EXIT_SUCCESS)
 	{
@@ -453,7 +453,7 @@ int ergoAutolykos::startAutolykos(int argc, char ** argv)
 
 	ch::milliseconds ms = ch::milliseconds::zero();
 
-	// bomb node with HTTP with 10ms intervals, if new block came 
+	// bomb node with HTTP with 10ms intervals, if new block came
 	// signal miners with blockId
 	while (1)
 	{

@@ -2,7 +2,11 @@
 
 #include"cl_warpper.h"
 
-#include "secp256k1\include\OCLdefs.h"
+#include "OCLdefs.h"
+
+#include <stdio.h>
+#include <string.h>
+
 int CLWarpper::instance_count = 0;
 
 
@@ -354,31 +358,31 @@ cl_int CLWarpper::CopyBuffer(cl_mem clBuff, void* cpBuff , size_t size, bool cl2
 	return err;
 }
 
-void* CLWarpper::CreateSVMbuffer(uint32_t size , bool readOnly )
-{
-
-	cl_int error;
-	cl_mem_flags flags = CL_MEM_SVM_FINE_GRAIN_BUFFER;
-	if (readOnly) {
-		flags |= CL_MEM_READ_ONLY;
-	}
-	else {
-		flags |= CL_MEM_READ_WRITE;
-	}
-
-	size_t usize = (size_t)size;
-
-	void* buff =
-		(void*)clSVMAlloc(
-			*context,                // the context where this memory is supposed to be used
-			flags,
-			usize,     // amount of memory to allocate (in bytes)
-			sizeof(cl_uint)/*0*/                       // alignment in bytes (0 means default)
-			);
-	return buff;
-
-
-}
+//void* CLWarpper::CreateSVMbuffer(uint32_t size , bool readOnly )
+//{
+//
+//	cl_int error;
+//	cl_mem_flags flags = CL_MEM_SVM_FINE_GRAIN_BUFFER;
+//	if (readOnly) {
+//		flags |= CL_MEM_READ_ONLY;
+//	}
+//	else {
+//		flags |= CL_MEM_READ_WRITE;
+//	}
+//
+//	size_t usize = (size_t)size;
+//
+//	void* buff =
+//		(void*)clSVMAlloc(
+//			*context,                // the context where this memory is supposed to be used
+//			flags,
+//			usize,     // amount of memory to allocate (in bytes)
+//			sizeof(cl_uint)/*0*/                       // alignment in bytes (0 means default)
+//			);
+//	return buff;
+//
+//
+//}
 std::shared_ptr<CLProgram> CLWarpper::buildProgramFromFile(const char *filename, std::string options)
 {
 
@@ -407,7 +411,7 @@ std::shared_ptr<CLProgram> CLWarpper::buildProgramFromFile(const char *filename,
 	checkError(error);
 	build_log[log_size] = '\0';
 	std::string buildLogMessage = "";
-	if (log_size > 2  && log_size < 100) {
+	if (log_size > 2  && log_size < 20 ) {
 		buildLogMessage = build_log;
 		std::cout << buildLogMessage << std::endl;
 	}
