@@ -311,7 +311,7 @@ __kernel void BlockMining(
 			//================================================================//
 			j = ((cl_ulong*)r)[3] < ((cl_ulong global*)bound)[3] || ((cl_ulong*)r)[3] == ((cl_ulong global*)bound)[3] && (((cl_ulong*)r)[2] < ((cl_ulong global*)bound)[2] || ((cl_ulong*)r)[2] == ((cl_ulong global*)bound)[2] && (((cl_ulong*)r)[1] < ((cl_ulong global*)bound)[1] || ((cl_ulong*)r)[1] == ((cl_ulong global*)bound)[1] && ((cl_ulong*)r)[0] < ((cl_ulong global*)bound)[0]));
 
-			valid[tid] = (1 - !j) * (tid + 1);
+			
 
 			if (j)
 			{
