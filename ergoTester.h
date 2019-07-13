@@ -142,7 +142,7 @@ int TestSolutions(
 	// N_LEN * NUM_SIZE_8 bytes // 2 GiB
 	//cl_uint * hashes_d;
 	cl_mem hashes_d = clw->Createbuffer((cl_uint)N_LEN * NUM_SIZE_8  * sizeof(char) , CL_MEM_READ_WRITE);
-	cl_uint* hhashes_d = (cl_uint*)malloc((cl_uint)N_LEN * NUM_SIZE_8 * sizeof(char));
+	//cl_uint* hhashes_d = (cl_uint*)malloc((cl_uint)N_LEN * NUM_SIZE_8 * sizeof(char));
 	// WORKSPACE_SIZE_8 bytes
 	// potential solutions of puzzle
 	//cl_uint * res_d;
@@ -285,7 +285,7 @@ int TestPerformance(
 	// N_LEN * NUM_SIZE_8 bytes // 2 GiB
 	//cl_uint * hashes_d;
 	cl_mem hashes_d = clw->Createbuffer((cl_uint)N_LEN * NUM_SIZE_8 * sizeof(char), CL_MEM_READ_WRITE);
-	cl_uint* hhashes_d = (cl_uint*)malloc((cl_uint)N_LEN * NUM_SIZE_8 * sizeof(char));
+	//cl_uint* hhashes_d = (cl_uint*)malloc((cl_uint)N_LEN * NUM_SIZE_8 * sizeof(char));
 	// WORKSPACE_SIZE_8 bytes
 	// potential solutions of puzzle
 	//cl_uint * res_d;
