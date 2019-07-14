@@ -19,7 +19,11 @@ These files must be in the same folder as Executable file:
  
  # Requirements (Linux)
  
-  1- Installing AMDGPU PRO driver for Ubuntu 
+  1- Installing AMDGPU PRO driver for Ubuntu.
+  
+  Download AMDGPU-PRO package for your Linux distribution from amd.com, upack the downloaded file and run: 
+  
+     $ amdgpu-pro-install --opencl=legacy,pal --headless
   
   2 - Opencl headers
   
