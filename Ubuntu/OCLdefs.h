@@ -54,7 +54,7 @@ typedef unsigned __int32        cl_uint;
 //
 // kernel block size
 // #define BLOCK_DIM          64
-#define BLOCK_DIM        32// (NONCES_PER_ITER/1024)// 32
+#define BLOCK_DIM        32// 
 ////////////////////////////////////////////////////////////////////////////////
 // Memory compatibility checks
 // should probably be now more correctly set

@@ -713,10 +713,10 @@ __kernel void InitPrehash(
         // pk || mes || w
         // 2 * PK_SIZE_8 + NUM_SIZE_8 bytes
         //cl_uint * rem = (cl_uint __local * ) sdata;
-		cl_uint rem[2 * PK_SIZE_8 + NUM_SIZE_8];// = sdata;
+		uint8_t rem[2 * PK_SIZE_8 + NUM_SIZE_8];// = sdata;
 		for (int rr = 0; rr< 2 * PK_SIZE_8 + NUM_SIZE_8; rr++)
 		{
-			rem[rr] = sdata[rr] ;
+			rem[rr] = ((uint8_t __local *)sdata)[rr] ;
 		}		
 
 
