@@ -5,7 +5,7 @@ using namespace std;
 
 INITIALIZE_EASYLOGGINGPP
 namespace ch = std::chrono;
-#define  _TEST_
+//#define  _TEST_
 int main(int argc, char* argv[])
 {
  #ifdef _TEST_
