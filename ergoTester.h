@@ -200,10 +200,21 @@ int TestSolutions(
 	//{
 	//	ph->hUncompleteInitPrehash(data_d, uctxs_d);
 	//}
+	std::chrono::milliseconds ms = std::chrono::milliseconds::zero();
 
-
+	std::chrono::milliseconds start = std::chrono::duration_cast<std::chrono::milliseconds>(
+		std::chrono::system_clock::now().time_since_epoch()
+		);
 
 	ph->Prehash(info->keepPrehash, data_d, /*uctxs_d,*/ hashes_d, res_d/*,ldata*/);
+
+	ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+		std::chrono::system_clock::now().time_since_epoch()
+		) - start;
+
+	LOG(INFO) << "Prehash time: " << ms.count() << " ms";
+
+
 	//// calculate unfinalized hash of message
 	MiningClass *min = new MiningClass(clw);
 	min->InitMining(&ctx_h, (cl_uint *)info->mes, NUM_SIZE_8);
@@ -663,12 +674,11 @@ int testErgo(int argc, char* argv[])
 	//  Run performance tests
 	//========================================================================//
 //	info.keepPrehash = (freeMem >= MIN_FREE_MEMORY_PREHASH) ? 1 : 0;
+
 	LOG(INFO) << "Test suite executable is now terminated";
 
 	info.keepPrehash = 0;
 	TestPerformance(&info, x, w);
-
-	return EXIT_SUCCESS;
 
 
 

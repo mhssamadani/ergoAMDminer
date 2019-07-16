@@ -3,7 +3,7 @@ PreHashClass::PreHashClass(CLWarpper *cll)
 {
 	cl = cll;
 
-	const  string buildOptions = "-O0 -w -I .";
+	const  string buildOptions = " -w -I .";
 	program = cl->buildProgramFromFile("PreHashKernel.cl", buildOptions);
 
 }
@@ -93,7 +93,7 @@ void PreHashClass::hFinalPrehashMultSecKey(
 	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), &hashes));
 
 	// Run the kernel.
-	cout << "\n Running kernel (FinalPrehashMultSecKey) " << flush;
+	cout << "\n Running kernel (FinalPrehash) \n ";
 
 	size_t t1 = ((N_LEN / BLOCK_DIM) + 1) * BLOCK_DIM;
 	size_t global_work_size[1] = { t1 };
@@ -165,7 +165,7 @@ int PreHashClass::Prehash(
 		size_t local_work_size[1] = { BLOCK_DIM };
 
 		// Run the kernel.
-		cout << "\n Running kernel (InitPrehash)" << flush;
+		cout << "\n Running kernel (InitPrehash) \n";
 
 		cl_int  err = clEnqueueNDRangeKernel(*cl->queue, kernel, 1, 0, global_work_size, local_work_size, 0, 0, 0);
 		cl->checkError(err);
