@@ -74,17 +74,17 @@ void ergoAutolykos::MinerThread(CLWarpper *clw,int deviceId, info_t * info, std:
 
 	// CL_DEVICE_MAX_MEM_ALLOC_SIZE
 	cl_ulong max_mem_alloc_size = clw->getMaxAllocSizeMB();
-	printf("  CL_DEVICE_MAX_MEM_ALLOC_SIZE:\t\t%u MByte\n", max_mem_alloc_size);
+	//printf(" GPU %d : CL_DEVICE_MAX_MEM_ALLOC_SIZE:\t\t%u MByte\n",deviceId, max_mem_alloc_size);
 
 	//// CL_DEVICE_GLOBAL_MEM_SIZE
 	cl_ulong mem_size = clw->getGlobalSizeMB();
-	printf("  CL_DEVICE_GLOBAL_MEM_SIZE:\t\t%u MByte\n", mem_size);
+	//printf(" GPU %d : CL_DEVICE_GLOBAL_MEM_SIZE:\t\t%u MByte\n",deviceId, mem_size);
 
 
 	freeMem = max_mem_alloc_size * 1024 * 1024;
 	if (freeMem < MIN_FREE_MEMORY)
 	{
-		LOG(ERROR) << "Not enough GPU memory for mining,"
+		LOG(ERROR) <<"GPU " << clw->m_gpuIndex << " Not enough GPU memory for mining,"
 			<< " minimum 2.8 GiB needed";
 
 		return;
@@ -92,7 +92,7 @@ void ergoAutolykos::MinerThread(CLWarpper *clw,int deviceId, info_t * info, std:
 
 	if (keepPrehash && freeMem < MIN_FREE_MEMORY_PREHASH)
 	{
-		LOG(ERROR) << "Not enough memory for keeping prehashes, "
+		LOG(ERROR) <<"GPU " << clw->m_gpuIndex <<  "Not enough memory for keeping prehashes, "
 			<< "setting keepPrehash to false";
 
 		keepPrehash = 0;
@@ -428,9 +428,9 @@ int ergoAutolykos::startAutolykos(int argc, char ** argv)
 
 	for (int i = 0; i < deviceCount; ++i)
 	{
-		clw[i] = new CLWarpper(i);
-		miners[i] = std::thread(MinerThread, clw[i],i, &info, &hashrates);
-		hashrates[i] = 0;
+			hashrates[i] = 0;
+			clw[i] = new CLWarpper(i);
+			miners[i] = std::thread(MinerThread, clw[i],i, &info, &hashrates);
 	}
 
 	// get first block

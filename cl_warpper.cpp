@@ -56,33 +56,29 @@ void CLWarpper::init(int gpuIndex) {
 	queue = 0;
 	context = 0;
 
-	cl_uint num_platforms;
-	error = clGetPlatformIDs(1, &platform_id, &num_platforms);
 
-	if (error != CL_SUCCESS) {
-		throw std::runtime_error("Error getting OpenCL platforms ids: " + errorMessage(error));
-	}
-	if (num_platforms == 0) {
-		throw std::runtime_error("Error: no OpenCL platforms available");
-	}
+    int i, j;
+    char* value;
+    size_t valueSize;
+    cl_uint platformCount;
+    cl_platform_id* platforms;
+    cl_uint deviceCount;
+    cl_device_id* device_ids;
+    cl_uint maxComputeUnits;
 
-	cl_uint num_devices;
-	error = clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_GPU | CL_DEVICE_TYPE_ACCELERATOR, 0, 0, &num_devices);
-	if (error != CL_SUCCESS) {
-		throw std::runtime_error("Error getting OpenCL device ids: " + errorMessage(error));
-	}
+    clGetPlatformIDs(0, NULL, &platformCount);
+    platforms = (cl_platform_id*) malloc(sizeof(cl_platform_id) * platformCount);
+    clGetPlatformIDs(platformCount, platforms, NULL);
 
-	cl_device_id *device_ids = new cl_device_id[num_devices];
-	error = clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_GPU | CL_DEVICE_TYPE_ACCELERATOR, num_devices, device_ids, &num_devices);
-	if (error != CL_SUCCESS) {
-		throw std::runtime_error("Error getting OpenCL device ids: " + errorMessage(error));
-	}
 
-	if (gpuIndex >= static_cast<int>(num_devices)) {
-		throw std::runtime_error("requested gpuindex " + toString(gpuIndex) + " goes beyond number of available device " + toString(num_devices));
-	}
-	device = device_ids[gpuIndex];
-	delete[] device_ids;
+    // get all devices
+    clGetDeviceIDs(platforms[gpuIndex], CL_DEVICE_TYPE_ALL, 0, NULL, &deviceCount);
+    device_ids = (cl_device_id*) malloc(sizeof(cl_device_id) * deviceCount);
+    clGetDeviceIDs(platforms[gpuIndex], CL_DEVICE_TYPE_ALL, deviceCount, device_ids, NULL);
+
+	device = device_ids[0];
+	//delete[] device_ids;
+
 
 	// Context
 	context = new cl_context();
@@ -96,6 +92,8 @@ void CLWarpper::init(int gpuIndex) {
 	if (error != CL_SUCCESS) {
 		throw std::runtime_error("Error creating OpenCL command queue, OpenCL errorcode: " + errorMessage(error));
 	}
+
+	m_gpuIndex = gpuIndex;
 }
 void CLWarpper::commonConstructor(cl_platform_id platform_id, cl_device_id device)
 {
