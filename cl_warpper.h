@@ -50,7 +50,7 @@ public:
 	CLWarpper(cl_platform_id platformId, cl_device_id deviceId);
 
 	virtual ~CLWarpper();
-
+	int m_gpuIndex;
 	static int roundUp(int quantization, int minimum);
 
 	static int getPower2Upperbound(int value);// eg pass in 320, it will return: 512
