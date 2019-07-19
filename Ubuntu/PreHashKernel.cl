@@ -829,6 +829,17 @@ __kernel void InitPrehash(
         //====================================================================//
         //  Dump result to global memory -- BIG ENDIAN
         //====================================================================//
+
+     
+
+#pragma unroll
+        for (int i = 0; i < NUM_SIZE_8; ++i)
+        {
+            ((uint8_t __global *)hashes)[(tid + 1) * NUM_SIZE_8 - i - 1]
+                = ((uint8_t *)ldata)[i];
+        }
+
+
         j = ((cl_ulong *)ldata)[3] < Q3
             || ((cl_ulong *)ldata)[3] == Q3 && (
                 ((cl_ulong *)ldata)[2] < Q2
@@ -839,17 +850,7 @@ __kernel void InitPrehash(
                 )
             );
 
-
-        //invalid[tid] = (1 - j) * (tid + 1);
-
-#pragma unroll
-        for (int i = 0; i < NUM_SIZE_8; ++i)
-        {
-            ((uint8_t __global *)hashes)[(tid + 1) * NUM_SIZE_8 - i - 1]
-                = ((uint8_t *)ldata)[i];
-        }
-
-
+	   //invalid[tid] = (1 - j) * (tid + 1);
         // rehash out of bounds hash   
         while(!j)
         {

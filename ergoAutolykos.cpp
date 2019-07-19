@@ -426,6 +426,8 @@ int ergoAutolykos::startAutolykos(int argc, char ** argv)
 	std::vector<std::thread> miners(deviceCount);
 	std::vector<double> hashrates(deviceCount);
 
+	LOG(INFO) << " \n \n Number Of Gpu   " << deviceCount << "\n \n ";
+
 	for (int i = 0; i < deviceCount; ++i)
 	{
 			hashrates[i] = 0;
