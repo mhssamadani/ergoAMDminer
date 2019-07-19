@@ -829,8 +829,6 @@ __kernel void InitPrehash(
         //====================================================================//
         //  Dump result to global memory -- BIG ENDIAN
         //====================================================================//
- 
-
 #pragma unroll
         for (int i = 0; i < NUM_SIZE_8; ++i)
         {
@@ -839,8 +837,7 @@ __kernel void InitPrehash(
         }
 
 
-
-       j = ((cl_ulong *)ldata)[3] < Q3
+        j = ((cl_ulong *)ldata)[3] < Q3
             || ((cl_ulong *)ldata)[3] == Q3 && (
                 ((cl_ulong *)ldata)[2] < Q2
                 || ((cl_ulong *)ldata)[2] == Q2 && (
