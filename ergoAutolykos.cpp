@@ -367,12 +367,38 @@ int ergoAutolykos::startAutolykos(int argc, char ** argv)
 	//========================================================================//
 	//  Check GPU availability
 	//========================================================================//
-	cl_uint deviceCount;
-	cl_int errNum = clGetPlatformIDs(0, NULL, &deviceCount);
+	clw = new CLWarpper*[100];
 
+    int i, j;
+    char* value;
+    size_t valueSize;
+    cl_uint platformCount;
+    cl_platform_id* platforms;
+    cl_uint TotaldeviceCount = 0;
+    cl_device_id* device_ids;
+    cl_uint maxComputeUnits;
+
+    clGetPlatformIDs(0, NULL, &platformCount);
+    platforms = (cl_platform_id*) malloc(sizeof(cl_platform_id) * platformCount);
+    clGetPlatformIDs(platformCount, platforms, NULL);
+
+    for(int i=0;i<platformCount;i++)
+    {
+    	cl_uint deviceCount = 0;
+        clGetDeviceIDs(platforms[i], CL_DEVICE_TYPE_GPU, 0, NULL, &deviceCount);
+        device_ids = (cl_device_id*) malloc(sizeof(cl_device_id) * deviceCount);
+        clGetDeviceIDs(platforms[i], CL_DEVICE_TYPE_GPU, deviceCount, device_ids, NULL);
+        for(int j=0;j<deviceCount;j++)
+        {
+			clw[i] = new CLWarpper(platforms[i],device_ids[j]);
+        	TotaldeviceCount++;
+        }
+
+    }
+
+	LOG(INFO) << "Number Of GPUs: " << (int)TotaldeviceCount;
 	int status = EXIT_SUCCESS;
 
-	clw = new CLWarpper*[deviceCount];
 
 	//LOG(INFO) << "Using " << deviceCount << " GPU devices";
 	//========================================================================//
@@ -423,15 +449,12 @@ int ergoAutolykos::startAutolykos(int argc, char ** argv)
 	//========================================================================//
 	//  Fork miner threads
 	//========================================================================//
-	std::vector<std::thread> miners(deviceCount);
-	std::vector<double> hashrates(deviceCount);
+	std::vector<std::thread> miners(TotaldeviceCount);
+	std::vector<double> hashrates(TotaldeviceCount);
 
-	LOG(INFO) << " \n \n Number Of Gpu   " << deviceCount << "\n \n ";
-
-	for (int i = 0; i < deviceCount; ++i)
+	for (int i = 0; i < TotaldeviceCount; ++i)
 	{
 			hashrates[i] = 0;
-			clw[i] = new CLWarpper(i);
 			miners[i] = std::thread(MinerThread, clw[i],i, &info, &hashrates);
 	}
 
@@ -483,7 +506,7 @@ int ergoAutolykos::startAutolykos(int argc, char ** argv)
 			std::stringstream hrBuffer;
 			hrBuffer << "Average hashrates: ";
 			double totalHr = 0;
-			for (int i = 0; i < deviceCount; ++i)
+			for (int i = 0; i < TotaldeviceCount; ++i)
 			{
 				hrBuffer << "GPU" << i << " " << hashrates[i] << " MH/s ";
 				totalHr += hashrates[i];
@@ -497,3 +520,4 @@ int ergoAutolykos::startAutolykos(int argc, char ** argv)
 
 	return EXIT_SUCCESS;
 }
+
