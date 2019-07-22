@@ -5,7 +5,7 @@ You can find CUDA miner at:  [CUDA miner](https://github.com/ergoplatform/Autoly
 
 Please note that this is the first release of the OpenCL miner and needs some optimization for improved hashrate.
 
-Update: hashrate is 22.5Mh/s for rx570-8g, 23.5 for rx580-5g, and 25 for rx Vega56. 
+Update: hashrate is 22.5Mh/s for rx570-8g, 23.5 for rx580-8g, and 25 for rx Vega56. 
 
 The code is based on opencl 1.2 and tested on RX570, RX580, and RX VEGA56.
 
