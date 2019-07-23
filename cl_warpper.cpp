@@ -8,7 +8,7 @@
 #include <string.h>
 
 int CLWarpper::instance_count = 0;
-
+static int _gpus = 0;
 
 
 
@@ -107,14 +107,20 @@ void CLWarpper::commonConstructor(cl_platform_id platform_id, cl_device_id devic
 	context = new cl_context();
 	*context = clCreateContext(0, 1, &device, NULL, NULL, &error);
 	if (error != CL_SUCCESS) {
-		throw std::runtime_error("Error creating OpenCL context, OpenCL errocode: " + errorMessage(error));
+		//throw std::runtime_error("Error creating OpenCL context, OpenCL errocode: " + errorMessage(error));
+		std::cout << "\n Error creating OpenCL context";
+		m_gpuIndex = -1;
 	}
 	// Command-queue
 	queue = new cl_command_queue;
 	*queue = clCreateCommandQueue(*context, device, 0, &error);
 	if (error != CL_SUCCESS) {
-		throw std::runtime_error("Error creating OpenCL command queue, OpenCL errorcode: " + errorMessage(error));
+
+		std::cout << "\n Error creating OpenCL command queue";
+		//throw std::runtime_error("Error creating OpenCL command queue, OpenCL errorcode: " + errorMessage(error));
+		m_gpuIndex = -1;
 	}
+	m_gpuIndex = _gpus++;
 }
 int CLWarpper::roundUp(int quantization, int minimum) {
 	return ((minimum + quantization - 1) / quantization * quantization);
@@ -339,7 +345,7 @@ cl_int CLWarpper::CopyBuffer(cl_mem clBuff, void* cpBuff , size_t size, bool cl2
 		if (err != CL_SUCCESS)
 		{
 			printf("Error: Failed to read output array! %d\n", err);
-			exit(1);
+			//exit(1);
 		}
 
 	}
@@ -349,7 +355,7 @@ cl_int CLWarpper::CopyBuffer(cl_mem clBuff, void* cpBuff , size_t size, bool cl2
 		if (err != CL_SUCCESS)
 		{
 			printf("Error: Failed to write to source array!\n");
-			exit(1);
+			//exit(1);
 		}
 
 	}
