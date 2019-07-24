@@ -429,7 +429,7 @@ int ergoAutolykos::startAutolykos(int argc, char ** argv)
         clGetDeviceIDs(platforms[i], CL_DEVICE_TYPE_GPU, deviceCount, device_ids, NULL);
         for(int j=0;j<deviceCount;j++)
         {
-			clw[i] = new CLWarpper(platforms[i],device_ids[j]);
+			clw[TotaldeviceCount] = new CLWarpper(platforms[i],device_ids[j]);
         	TotaldeviceCount++;
         }
 
