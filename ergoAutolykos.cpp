@@ -163,7 +163,7 @@ void ergoAutolykos::MinerThread(CLWarpper *clw,int deviceId, info_t * info, std:
 	// if keepPrehash == true // N_LEN * 80 bytes // 5 GiB
 	cl_mem uctxs_d;
 	uctx_t* huctxs_d;
-	if (info->keepPrehash)
+	if (keepPrehash)
 	{
 		uctxs_d = clw->Createbuffer((cl_uint)N_LEN * sizeof(uctx_t), CL_MEM_READ_WRITE);
 		if (uctxs_d == NULL)
