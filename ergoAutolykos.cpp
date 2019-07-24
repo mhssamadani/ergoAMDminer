@@ -529,7 +529,7 @@ int ergoAutolykos::startAutolykos(int argc, char ** argv)
 	//  Main thread get-block cycle
 	//========================================================================//
 	uint_t curlcnt = 0;
-	const uint_t curltimes = 200;
+	const uint_t curltimes = 2000;
 
 	ch::milliseconds ms = ch::milliseconds::zero();
 
