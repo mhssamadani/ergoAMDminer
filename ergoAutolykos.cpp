@@ -77,12 +77,12 @@ void ergoAutolykos::MinerThread(CLWarpper *clw,int deviceId, info_t * info, std:
 	// CL_DEVICE_MAX_MEM_ALLOC_SIZE
 	cl_ulong max_mem_alloc_size = clw->getMaxAllocSizeMB();
 	//printf(" GPU %d : CL_DEVICE_MAX_MEM_ALLOC_SIZE:\t\t%u MByte\n",deviceId, max_mem_alloc_size);
-	LOG(INFO) << "Gpu " << deviceId << ": CL_DEVICE_MAX_MEM_ALLOC_SIZE:\t\t" << max_mem_alloc_size << "MByte";
+	//LOG(INFO) << "Gpu " << deviceId << ": CL_DEVICE_MAX_MEM_ALLOC_SIZE:\t\t" << max_mem_alloc_size << "MByte";
 
 	//// CL_DEVICE_GLOBAL_MEM_SIZE
 	cl_ulong mem_size = clw->getGlobalSizeMB();
 	//printf(" GPU %d : CL_DEVICE_GLOBAL_MEM_SIZE:\t\t%u MByte\n",deviceId, mem_size);
-	LOG(INFO) << "Gpu " << deviceId << ": CL_DEVICE_GLOBAL_MEM_SIZE:\t\t" << mem_size << "MByte";
+	//LOG(INFO) << "Gpu " << deviceId << ": CL_DEVICE_GLOBAL_MEM_SIZE:\t\t" << mem_size << "MByte";
 
 
 	freeMem = max_mem_alloc_size * 1024 * 1024;
