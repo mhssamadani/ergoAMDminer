@@ -17,6 +17,8 @@ ergoAutolykos::~ergoAutolykos()
 ////////////////////////////////////////////////////////////////////////////////
 void ergoAutolykos::MinerThread(CLWarpper *clw,int deviceId, info_t * info, std::vector<double>* hashrates)
 {
+	LOG(INFO) << "Gpu " << deviceId << "Started";
+
 	state_t state = STATE_KEYGEN;
 	char logstr[1000];
 
@@ -75,10 +77,12 @@ void ergoAutolykos::MinerThread(CLWarpper *clw,int deviceId, info_t * info, std:
 	// CL_DEVICE_MAX_MEM_ALLOC_SIZE
 	cl_ulong max_mem_alloc_size = clw->getMaxAllocSizeMB();
 	//printf(" GPU %d : CL_DEVICE_MAX_MEM_ALLOC_SIZE:\t\t%u MByte\n",deviceId, max_mem_alloc_size);
+	//LOG(INFO) << "Gpu " << deviceId << ": CL_DEVICE_MAX_MEM_ALLOC_SIZE:\t\t" << max_mem_alloc_size << "MByte";
 
 	//// CL_DEVICE_GLOBAL_MEM_SIZE
 	cl_ulong mem_size = clw->getGlobalSizeMB();
 	//printf(" GPU %d : CL_DEVICE_GLOBAL_MEM_SIZE:\t\t%u MByte\n",deviceId, mem_size);
+	//LOG(INFO) << "Gpu " << deviceId << ": CL_DEVICE_GLOBAL_MEM_SIZE:\t\t" << mem_size << "MByte";
 
 
 	freeMem = max_mem_alloc_size * 1024 * 1024;
@@ -106,26 +110,51 @@ void ergoAutolykos::MinerThread(CLWarpper *clw,int deviceId, info_t * info, std:
 	// boundary for puzzle
 	// (2 * PK_SIZE_8 + 2 + 4 * NUM_SIZE_8 + 212 + 4) bytes // ~0 MiB
 	cl_mem bound_d = clw->Createbuffer((NUM_SIZE_8 + DATA_SIZE_8) * sizeof(char), CL_MEM_READ_WRITE);
+	if (bound_d == NULL)
+	{
+		LOG(INFO) << "GPU " << deviceId << "error in  allocating hashbound_des_d";
+		return;
+	}
 	cl_uint* hbound_d = (cl_uint*)malloc((NUM_SIZE_8 + DATA_SIZE_8) * sizeof(char));
 
 	// data: pk || mes || w || padding || x || sk || ctx
 	//cl_uint * data_d = bound_d + NUM_SIZE_32;
 	cl_mem data_d = clw->Createbuffer((2 * PK_SIZE_8 + 2 + 3 * NUM_SIZE_8 + 212 + 4) * sizeof(char), CL_MEM_READ_WRITE);
+	if (data_d == NULL)
+	{
+		LOG(INFO) << "GPU " << deviceId << "error in  allocating data_d";
+		return;
+	}
 	cl_uint* hdata_d = (cl_uint*)malloc((2 * PK_SIZE_8 + 2 + 3 * NUM_SIZE_8 + 212 + 4) * sizeof(char));
 
 
 	// precalculated hashes
 	// N_LEN * NUM_SIZE_8 bytes // 2 GiB
 	cl_mem hashes_d = clw->Createbuffer((cl_uint)N_LEN * NUM_SIZE_8 * sizeof(char), CL_MEM_READ_WRITE);
+	if (hashes_d == NULL)
+	{
+		LOG(INFO) << "GPU " << deviceId << "error in  allocating hashes_d";
+		return;
+	}
 	//cl_uint* hhashes_d = (cl_uint*)malloc((cl_uint)N_LEN * NUM_SIZE_8 * sizeof(char));
 
 	// WORKSPACE_SIZE_8 bytes // depends on macros, now ~512 MiB
 	// potential solutions of puzzle
 	cl_mem res_d = clw->Createbuffer((NUM_SIZE_8 + sizeof(cl_uint)) * sizeof(char), CL_MEM_WRITE_ONLY);
+	if (res_d == NULL)
+	{
+		LOG(INFO) << "GPU " << deviceId << "error in  allocating res_d";
+		return;
+	}
 	cl_uint* hres_d = (cl_uint*)malloc((NUM_SIZE_8 + sizeof(cl_uint)) * sizeof(char));
 
 	// indices of unfinalized hashes
 	cl_mem indices_d = clw->Createbuffer(sizeof(cl_uint), CL_MEM_READ_WRITE);
+	if (indices_d == NULL)
+	{
+		LOG(INFO) << "GPU " << deviceId << "error in  allocating indices_d";
+		return;
+	}
 	cl_uint* hindices_d = (cl_uint*)malloc(sizeof(cl_uint));
 	memset(hindices_d,0, sizeof(cl_uint));
 	clw->CopyBuffer(indices_d, hindices_d, sizeof(cl_uint), false);
@@ -134,9 +163,14 @@ void ergoAutolykos::MinerThread(CLWarpper *clw,int deviceId, info_t * info, std:
 	// if keepPrehash == true // N_LEN * 80 bytes // 5 GiB
 	cl_mem uctxs_d;
 	uctx_t* huctxs_d;
-	if (info->keepPrehash)
+	if (keepPrehash)
 	{
 		uctxs_d = clw->Createbuffer((cl_uint)N_LEN * sizeof(uctx_t), CL_MEM_READ_WRITE);
+		if (uctxs_d == NULL)
+		{
+			LOG(INFO) << "GPU " << deviceId << "error in  allocating uctxs_d";
+			return;
+		}
 		huctxs_d = (uctx_t*)malloc((cl_uint)N_LEN * sizeof(uctx_t));
 	}
 
@@ -368,6 +402,10 @@ int ergoAutolykos::startAutolykos(int argc, char ** argv)
 	//  Check GPU availability
 	//========================================================================//
 	clw = new CLWarpper*[100];
+	for (size_t i = 0; i < 100; i++)
+	{
+		clw[i] = NULL;
+	}
 
     int i, j;
     char* value;
@@ -382,6 +420,7 @@ int ergoAutolykos::startAutolykos(int argc, char ** argv)
     platforms = (cl_platform_id*) malloc(sizeof(cl_platform_id) * platformCount);
     clGetPlatformIDs(platformCount, platforms, NULL);
 
+	
     for(int i=0;i<platformCount;i++)
     {
     	cl_uint deviceCount = 0;
@@ -390,7 +429,7 @@ int ergoAutolykos::startAutolykos(int argc, char ** argv)
         clGetDeviceIDs(platforms[i], CL_DEVICE_TYPE_GPU, deviceCount, device_ids, NULL);
         for(int j=0;j<deviceCount;j++)
         {
-			clw[i] = new CLWarpper(platforms[i],device_ids[j]);
+			clw[TotaldeviceCount] = new CLWarpper(platforms[i],device_ids[j]);
         	TotaldeviceCount++;
         }
 
@@ -454,8 +493,24 @@ int ergoAutolykos::startAutolykos(int argc, char ** argv)
 
 	for (int i = 0; i < TotaldeviceCount; ++i)
 	{
-			hashrates[i] = 0;
-			miners[i] = std::thread(MinerThread, clw[i],i, &info, &hashrates);
+		if (clw[i] != NULL)
+		{
+			if (clw[i]->m_gpuIndex != -1)
+			{
+				LOG(INFO) << "Start Gpu " << i;
+				std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+				hashrates[i] = 0;
+				miners[i] = std::thread(MinerThread, clw[i], i, &info, &hashrates);
+			}
+			else
+			{
+				LOG(INFO) << "DONT Start Gpu " << i;
+			}
+		}
+		else
+		{
+			LOG(INFO) << "DONT Create Gpu " << i;
+		}
 	}
 
 	// get first block

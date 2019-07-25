@@ -141,7 +141,7 @@ int PreHashClass::Prehash(
 		size_t local_work_size[1] = { BLOCK_DIM };
 
 		// Run the kernel.
-		cout << "\n Running kernel..., CompleteInitPrehash" << flush;
+		//cout << "\n Running kernel..., CompleteInitPrehash" << flush;
 
 		cl_int  err = clEnqueueNDRangeKernel(*cl->queue, kernel, 1, 0, global_work_size, local_work_size, 0, 0, 0);
 		cl->checkError(err);
