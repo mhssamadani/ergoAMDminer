@@ -41,7 +41,7 @@ typedef unsigned __int32        cl_uint;
 
 // N: number of precalculated hashes
 #define N_LEN             0x4000000// kamtar az 64(BLOK_DIM) nabashad
-
+#define Sol_Index 0x3381BF + 10
 ////////////////////////////////////////////////////////////////////////////////
 //  PARAMETERS: Heuristic prehash kernel parameters
 ////////////////////////////////////////////////////////////////////////////////

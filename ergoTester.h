@@ -117,6 +117,7 @@ int TestSolutions(
 {
 	LOG(INFO) << "Solutions test started";
 	LOG(INFO) << "Set keepPrehash = " << ((info->keepPrehash) ? "true" : "false");
+	bool keepPrehash = info->keepPrehash;
 
 	//========================================================================//
 	//  Host memory allocation
@@ -124,7 +125,7 @@ int TestSolutions(
 	// hash context
 	// (212 + 4) bytes
 	ctx_t ctx_h;
-
+	size_t allocatedMem = 0;
 	//========================================================================//
 	//  Device memory allocation
 	//========================================================================//
@@ -133,35 +134,91 @@ int TestSolutions(
 	//cl_uint * bound_d;
 	cl_mem bound_d = clw->Createbuffer((NUM_SIZE_8 + DATA_SIZE_8) * sizeof(char), CL_MEM_READ_WRITE);
 	cl_uint* hbound_d = (cl_uint *)malloc((NUM_SIZE_8 + DATA_SIZE_8) * sizeof(char));
+	allocatedMem += (NUM_SIZE_8 + DATA_SIZE_8) * sizeof(char);
 	// data: pk || mes || w || padding || x || sk || ctx
 	// (2 * PK_SIZE_8 + 2 + 3 * NUM_SIZE_8 + 212 + 4) bytes // ~0 MiB
 	//aminM  //cl_uint * data_d = bound_d + NUM_SIZE_32;
 	cl_mem data_d = clw->Createbuffer((2 * PK_SIZE_8 + 2 + 3 * NUM_SIZE_8 + 212 + 4)  * sizeof(char), CL_MEM_READ_WRITE);
 	cl_uint* hdata_d = (cl_uint*)malloc((2 * PK_SIZE_8 + 2 + 3 * NUM_SIZE_8 + 212 + 4) * sizeof(char));
+	allocatedMem += (2 * PK_SIZE_8 + 2 + 3 * NUM_SIZE_8 + 212 + 4) * sizeof(char);
+
 	// precalculated hashes
 	// N_LEN * NUM_SIZE_8 bytes // 2 GiB
 	//cl_uint * hashes_d;
 	cl_mem hashes_d = clw->Createbuffer((cl_uint)N_LEN * NUM_SIZE_8  * sizeof(char) , CL_MEM_READ_WRITE);
+	allocatedMem += (cl_uint)N_LEN * NUM_SIZE_8 * sizeof(char);
+
 	//cl_uint* hhashes_d = (cl_uint*)malloc((cl_uint)N_LEN * NUM_SIZE_8 * sizeof(char));
 	// WORKSPACE_SIZE_8 bytes
 	// potential solutions of puzzle
 	//cl_uint * res_d;
-	cl_mem res_d = clw->Createbuffer((cl_uint)WORKSPACE_SIZE_8  * sizeof(char), CL_MEM_WRITE_ONLY);
-	cl_uint* hres_d = (cl_uint*)malloc((cl_uint)WORKSPACE_SIZE_8 * sizeof(char));
+	cl_mem res_d = clw->Createbuffer((NUM_SIZE_8 + sizeof(cl_uint)) * sizeof(char), CL_MEM_WRITE_ONLY);
+	cl_uint* hres_d = (cl_uint*)malloc((NUM_SIZE_8 + sizeof(cl_uint)) * sizeof(char));
+	allocatedMem += (NUM_SIZE_8 + sizeof(cl_uint)) * sizeof(char);
+
 	// indices of unfinalized hashes
 	cl_mem indices_d = clw->Createbuffer(sizeof(cl_uint), CL_MEM_READ_WRITE);
 	cl_uint* hindices_d = (cl_uint*)malloc(sizeof(cl_uint));
+	allocatedMem += sizeof(cl_uint);
+
 	//uctx_t * uctxs_d = NULL;
-	cl_mem uctxs_d;
-	uctx_t* huctxs_d;
+
+	cl_ulong max_mem_alloc_size = clw->getDeviceInfoInt64(CL_DEVICE_MAX_MEM_ALLOC_SIZE);
+	cl_ulong mem_size = clw->getDeviceInfoInt64(CL_DEVICE_GLOBAL_MEM_SIZE);
+	LOG(INFO) <<"GPU " << clw->m_gpuIndex << " mem_size: " << clw->getGlobalSizeMB() << "  (MB) , max_mem_alloc_size: " << clw->getMaxAllocSizeMB() << " (MB) "; 
+	size_t uctx_t_count = max_mem_alloc_size / sizeof(uctx_t);
+
+	size_t memCount = (N_LEN / uctx_t_count) + 1;
+	size_t n_len = N_LEN;
+	cl_mem uctxs_d[100];
+	//uctx_t* huctxs_d[100];
+	cl_ulong memSize[100];
+	uctxs_d[0] = uctxs_d[1] = NULL;
 	if (info->keepPrehash)
 	{
-		uctxs_d = clw->Createbuffer((cl_uint)N_LEN * sizeof(uctx_t), CL_MEM_READ_WRITE);
-		huctxs_d = (uctx_t*)malloc((cl_uint)N_LEN * sizeof(uctx_t));
+		size_t preS = (cl_uint)N_LEN * sizeof(uctx_t);
+		if(memCount > 2 || memCount < 0 )
+		{
+			LOG(INFO) << "C: Error in Memory Alloc for KeepPrehash";
+			keepPrehash = false;
+
+		}
+		else if ( (allocatedMem + preS) < mem_size)
+		{
+
+			size_t last = N_LEN % uctx_t_count;
+			size_t sz = 0;
+			for (size_t i = 0; i < memCount ; i++)
+			{
+				if (i == memCount - 1)
+				{
+					uctxs_d[i] = clw->Createbuffer(last * sizeof(uctx_t), CL_MEM_READ_WRITE);
+					//huctxs_d[i] = (uctx_t*)malloc(last);
+					memSize[i] = i * uctx_t_count  + last;
+				}
+				else
+				{
+					uctxs_d[i] = clw->Createbuffer(uctx_t_count * sizeof(uctx_t), CL_MEM_READ_WRITE);
+					//huctxs_d[i] = (uctx_t*)malloc(uctx_t_count * sizeof(uctx_t));
+					memSize[i] = i*uctx_t_count + uctx_t_count;
+				}
+				if (uctxs_d[i] == NULL)
+				{
+					LOG(INFO) << "A: Error in Memory Alloc for KeepPrehash";
+					keepPrehash = false;
+				}
+				
+			}
+		}
+		else
+		{
+					LOG(INFO) << "B: Error in Memory Alloc for KeepPrehash";
+					keepPrehash = false;
+
+		}
+	
 	}
 
-	cl_mem ldata = clw->Createbuffer((cl_uint)118 * sizeof(uctx_t), CL_MEM_READ_WRITE);
-	cl_uint* hldata = (cl_uint*)malloc((cl_uint)118 * sizeof(uctx_t));
 
 	//========================================================================//
 	//  Data transfer form host to device
@@ -196,17 +253,19 @@ int TestSolutions(
 	cl_ulong base = 0;
 	PreHashClass *ph = new PreHashClass(clw);
 
-	//if (info->keepPrehash)
-	//{
-	//	ph->hUncompleteInitPrehash(data_d, uctxs_d);
-	//}
+	if (keepPrehash)
+	{
+		ph->hUncompleteInitPrehash(data_d, uctxs_d,memSize, memCount);
+	}
+
+	
 	std::chrono::milliseconds ms = std::chrono::milliseconds::zero();
 
 	std::chrono::milliseconds start = std::chrono::duration_cast<std::chrono::milliseconds>(
 		std::chrono::system_clock::now().time_since_epoch()
 		);
 
-	ph->Prehash(info->keepPrehash, data_d, /*uctxs_d,*/ hashes_d, res_d/*,ldata*/);
+	ph->Prehash(keepPrehash, data_d, uctxs_d, memSize,memCount, hashes_d, res_d/*,ldata*/);
 
 	ms = std::chrono::duration_cast<std::chrono::milliseconds>(
 		std::chrono::system_clock::now().time_since_epoch()
@@ -250,9 +309,10 @@ int TestSolutions(
 	clReleaseMemObject( hashes_d);
 	clReleaseMemObject(res_d);
 
-	if (info->keepPrehash) 
+	if (keepPrehash) 
 	{
-		clReleaseMemObject(uctxs_d);
+		clReleaseMemObject(uctxs_d[0]);
+		clReleaseMemObject(uctxs_d[1]);
 	}
 
 	LOG(INFO) << "Solutions test passed\n";
@@ -359,7 +419,7 @@ int TestPerformance(
 		std::chrono::system_clock::now().time_since_epoch()
 		);
 
-	ph->Prehash(0, data_d, hashes_d, res_d);
+//	ph->Prehash(0, data_d, hashes_d, res_d);
 
 
 	ms = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -645,8 +705,10 @@ int testErgo(int argc, char* argv[])
 	//  Run solutions correctness tests
 	//========================================================================//
 
+	info.keepPrehash = 1;
+	TestSolutions(&info, x, w);
 
-
+/*
 	if (NONCES_PER_ITER <= 0x3D5B84)
 	{
 		LOG(INFO) << "Need WORKSPACE value for at least 4021125,"
@@ -654,20 +716,20 @@ int testErgo(int argc, char* argv[])
 	}
 	else
 	{
-		info.keepPrehash = 0; //aminM
+		info.keepPrehash = 1;
 		TestSolutions(&info, x, w);
 		if (freeMem < MIN_FREE_MEMORY_PREHASH)
 		{
 			LOG(INFO) << "Not enough GPU memory for keeping prehashes, "
 				<< "skip test\n";
 		}
-		//else
-		//{
-		//	info.keepPrehash = 0;// 1;
-		//	TestSolutions(&info, x, w);
-		//}
+		else
+		{
+			info.keepPrehash = 0;
+			TestSolutions(&info, x, w);
+		}
 	}
-
+*/
 
 
 	//========================================================================//
