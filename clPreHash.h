@@ -34,9 +34,11 @@ public:
 	// uncompleted first iteration of hashes precalculation
 	void hUncompleteInitPrehash(
 		// data: pk
-		const cl_uint * data,
+		const cl_mem  data,
 		// unfinalized hash contexts
-		uctx_t * uctxs
+		cl_mem * uctxs,
+		cl_ulong *memsize,
+		cl_uint memCount
 		);
 
 	// complete first iteration of hashes precalculation
@@ -49,22 +51,6 @@ public:
 		cl_uint * hashes,
 		// indices of invalid range hashes
 		cl_uint * invalid
-		);
-
-	// unfinalized hashes update
-	void hUpdatePrehash(
-		// hashes
-		cl_uint * hashes,
-		// indices of invalid range hashes
-		cl_uint * invalid,
-		// length of invalid
-		const cl_uint len
-		);
-
-	// hashes modulo Q 
-	void hFinalPrehash(
-		// hashes
-		cl_uint * hashes
 		);
 
 	// hashes by secret key multiplication modulo Q 
@@ -81,7 +67,9 @@ public:
 		// data: pk || mes || w || padding || x || sk
 		cl_mem   data,
 		// unfinalized hashes contexts
-		/*uctx_t * uctxs,*/
+		cl_mem * uctxs,
+		cl_ulong *memsize,
+		cl_uint memCount ,
 		// hashes
 		cl_mem   hashes,
 		// indices of invalid range hashes

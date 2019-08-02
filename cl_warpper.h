@@ -85,6 +85,7 @@ public:
 private:
 	static int instance_count;
 	static std::string getFileContents(std::string filename);
+public:
 	int64_t getDeviceInfoInt64(cl_device_info name);
 };
 

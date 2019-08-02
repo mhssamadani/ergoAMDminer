@@ -28,12 +28,33 @@ void PreHashClass::hInitPrehash(
 // uncompleted first iteration of hashes precalculation
 void PreHashClass::hUncompleteInitPrehash(
 	// data: pk
-	const cl_uint * data,
+	const cl_mem  data,
 	// unfinalized hash contexts
-	uctx_t * uctxs
+	cl_mem * uctxs ,
+	cl_ulong *memsize,
+	cl_uint memCount
 	)
 {
+	//cout << "\n GPU " << cl->m_gpuIndex << " :Running kernel (UncompleteInitPrehash) \n";
 	cl_kernel kernel = program->getKernel("UncompleteInitPrehash");
+
+
+	cl->checkError(clSetKernelArg(kernel, 0, sizeof(cl_mem), &data));
+	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), &uctxs[0]));
+	cl->checkError(clSetKernelArg(kernel, 2, sizeof(cl_mem), &uctxs[1]));
+	cl->checkError(clSetKernelArg(kernel, 3, sizeof(cl_ulong), &memsize[0]));
+	cl->checkError(clSetKernelArg(kernel, 4, sizeof(cl_ulong), &memsize[1]));
+	cl->checkError(clSetKernelArg(kernel, 5, sizeof(cl_uint), &memCount));
+
+
+	size_t t1 = ((N_LEN / BLOCK_DIM) + 1) * BLOCK_DIM;
+	size_t global_work_size[1] = { t1 };
+	size_t local_work_size[1] = { BLOCK_DIM };
+
+	cl_int  err = clEnqueueNDRangeKernel(*cl->queue, kernel, 1, 0, global_work_size, local_work_size, 0, 0, 0);
+	cl->checkError(err);
+	err = clFinish(*cl->queue);
+	cl->checkError(err);
 
 }
 
@@ -53,29 +74,8 @@ void PreHashClass::hCompleteInitPrehash(
 
 }
 
-// unfinalized hashes update
-void PreHashClass::hUpdatePrehash(
-	// hashes
-	cl_uint * hashes,
-	// indices of invalid range hashes
-	cl_uint * invalid,
-	// length of invalid
-	const cl_uint len
-	)
-{
-	cl_kernel kernel = program->getKernel("UpdatePrehash");
 
-}
 
-// hashes modulo Q 
-void PreHashClass::hFinalPrehash(
-	// hashes
-	cl_uint * hashes
-	)
-{
-	cl_kernel kernel = program->getKernel("FinalPrehash");
-
-}
 
 // hashes by secret key multiplication modulo Q 
 void PreHashClass::hFinalPrehashMultSecKey(
@@ -114,7 +114,9 @@ int PreHashClass::Prehash(
 	// data: pk || mes || w || padding || x || sk
 	cl_mem  data,
 	// unfinalized hashes contexts
-	/*uctx_t * uctxs,*/
+	cl_mem * uctxs,
+	cl_ulong *memsize,
+	cl_uint memCount,
 	// hashes
 	cl_mem   hashes,
 	// indices of invalid range hashes
@@ -127,12 +129,19 @@ int PreHashClass::Prehash(
 
 	if (keep)
 	{
+		//cout << "\n GPU " << cl->m_gpuIndex << " :Running kernel (CompleteInitPrehash) \n";
 		cl_kernel kernel = program->getKernel("CompleteInitPrehash");
 
-		cl->checkError(clSetKernelArgSVMPointer(kernel, 0, data));
-		cl->checkError(clSetKernelArgSVMPointer(kernel, 1, NULL/*uctxs*/));
-		cl->checkError(clSetKernelArgSVMPointer(kernel, 2, hashes));
-		cl->checkError(clSetKernelArgSVMPointer(kernel, 3, invalid));
+		cl->checkError(clSetKernelArg(kernel, 0, sizeof(cl_mem), &data));
+
+		cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), &uctxs[0]));
+		cl->checkError(clSetKernelArg(kernel, 2, sizeof(cl_mem), &uctxs[1]));
+		cl->checkError(clSetKernelArg(kernel, 3, sizeof(cl_ulong), &memsize[0]));
+		cl->checkError(clSetKernelArg(kernel, 4, sizeof(cl_ulong), &memsize[1]));
+		cl->checkError(clSetKernelArg(kernel, 5, sizeof(cl_uint), &memCount));
+
+		cl->checkError(clSetKernelArg(kernel, 6, sizeof(cl_mem), &hashes));
+		cl->checkError(clSetKernelArg(kernel, 7, sizeof(cl_mem), &invalid));
 
 
 
@@ -175,6 +184,7 @@ int PreHashClass::Prehash(
 	}
 
 	// multiply by secret key moq Q
+
 	hFinalPrehashMultSecKey (data, hashes);
 
 	return EXIT_SUCCESS;

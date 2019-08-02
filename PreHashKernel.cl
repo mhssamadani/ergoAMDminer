@@ -43,6 +43,21 @@ __kernel void FinalPrehashMultSecKey(
                  = ((__global uint8_t *)hashes)[(tid + 1) * NUM_SIZE_8 - j - 1]; 
         }
 
+		//if (tid == Sol_Index)
+		//{
+		//	for (int i = 0; i < NUM_SIZE_8; ++i)
+		//	{
+		//		printf("tid %d , i %d ,  hIn %d", tid, i, ((__global uint8_t *)hashes)[(tid + 1) * NUM_SIZE_8 - i - 1]);
+		//	}
+
+		//	printf("tid %d  ,  h %d", tid, (cl_uint)hashes[(tid)]);
+		//}
+
+		//if (tid > Sol_Index - 10 && tid < Sol_Index + 10)
+		//{
+		//	printf("tid %d  ,  h %d", tid, (cl_uint)hashes[(tid + 1)]);
+		//}
+
         __private cl_uint r[NUM_SIZE_32 << 1];
 
 
@@ -149,8 +164,7 @@ __kernel void FinalPrehashMultSecKey(
 
 			cv = 0;
 
-			 fn_MadLo(h[i], x[1], cv, r[i + 1], cv);
-			//asm volatile ("mad.lo.cc.u32 %0, %1, %2, %0;":"+r"(r[i + 1]) : "r"(h[i]), "r"(x[1]));
+			 fn_MadLo(h[i], x[1], cv, r[i + 1], cv);//asm volatile ("mad.lo.cc.u32 %0, %1, %2, %0;":"+r"(r[i + 1]) : "r"(h[i]), "r"(x[1]));
 			
 			fn_MadHi(h[i], x[1], cv, r[i +2], cv);
 			//asm volatile ("madc.hi.cc.u32 %0, %1, %2, %0;":"+r"(r[i + 2]) : "r"(h[i]), "r"(x[1]));
@@ -400,280 +414,17 @@ __kernel void FinalPrehashMultSecKey(
 		}
 
 	}
+	//if (tid == 0x3381BF)
+	//{
+	//	for (int i = 0; i < NUM_SIZE_32; ++i)
+	//	{
+	//		printf("tid %d , i %d ,  hashes %d", tid, i, hashes[tid * NUM_SIZE_32 + i]);
+	//	}
+	//}
 
 	return;
 }
 
-
-
-__kernel  void CompleteInitPrehash(
-    // data: pk || mes || w || padding || x || sk
-    global const cl_uint * data,
-    // unfinalized hashes contexts
-    global const uctx_t * uctxs,
-    // hashes
-    global cl_uint * hashes,
-    // indices of invalid range hashes
-    global cl_uint * invalid
-)
-{
-    cl_uint j;
-    cl_uint tid =get_local_id(0);
-
-    // shared memory
-    __local  cl_uint sdata[ROUND_NP_SIZE_32];
-
-	#pragma unroll
-    for (int i = 0; i < NP_SIZE_32_BLOCK; ++i)
-    {
-        sdata[NP_SIZE_32_BLOCK * tid + i]
-            = data[NP_SIZE_32_BLOCK * tid + NUM_SIZE_32 + i];
-    }
-
-    barrier(CLK_LOCAL_MEM_FENCE);
-
-    tid = get_global_id(0);
-
-	
-    if (tid < N_LEN)
-    {
-        // mes || w
-        // PK_SIZE_8 + NUM_SIZE_8 bytes
-		// AMINM uint8_t * rem = (uint8_t *)sdata + PK_SIZE_8 - NUM_SIZE_8;
-        uint8_t rem[ROUND_NP_SIZE_32*4];
-		for (int rr = 0; rr<ROUND_NP_SIZE_32*4; rr++)
-		{
-			uint8_t tmpData = ((uint8_t __local *)sdata + PK_SIZE_8 - NUM_SIZE_8)[rr];
-			rem[rr] = tmpData ;
-		}		
-		/*
-		OR
-		for (int rr = 0; rr<ROUND_NP_SIZE_32; rr++)
-		{
-			rem[rr] = *((uint8_t *)sdata + PK_SIZE_8 - NUM_SIZE_8 )+rr;
-		}
-
-		*/
-
-        // local memory
-        // 472 bytes
-        cl_uint ldata[118];
-
-        // 32 * 64 bits = 256 bytes 
-        cl_ulong * aux = (cl_ulong *)ldata;
-        // (212 + 4) bytes 
-        ctx_t * ctx = (ctx_t *)(ldata + 64);
-
-		
-        //====================================================================//
-        //  Initialize context
-        //====================================================================//
-		 
-        ctx->c = CONTINUE_POS;
-
-#pragma unroll
-        for (
-            j = CONST_MES_SIZE_8 - BUF_SIZE_8 + PK_SIZE_8 - 1;
-            ctx->c < BUF_SIZE_8 && j < CONST_MES_SIZE_8;
-            ++j
-        )
-        {
-            ctx->b[ctx->c++]
-                = (
-                    !((7 - (j & 7)) >> 1)
-                    * ((j >> 3) >> (((~(j & 7)) & 1) << 3))
-                ) & 0xFF;
-        }
-
-        ctx->c = 0;
-
-		
-#pragma unroll
-        for ( ; j < CONST_MES_SIZE_8; ++j)
-        {
-            ctx->b[ctx->c++]
-                = (
-                    !((7 - (j & 7)) >> 1)
-                    * ((j >> 3) >> (((~(j & 7)) & 1) << 3))
-                ) & 0xFF;
-        }
-
-		
-#pragma unroll
-        for (int i = 0; i < NUM_SIZE_32; ++i)
-        {
-            ((cl_uint *)(ctx->b + ctx->c))[i] = ((cl_uint __global*)data)[i]; 
-        }
-        
-        // last byte of public key
-        ctx->b[ctx->c + NUM_SIZE_8] = ((uint8_t __global*)data)[NUM_SIZE_8];
-
-		
-        ctx->c += PK_SIZE_8;
-
-#pragma unroll
-        for (int i = 0; i < 16; ++i)
-        {
-            ((cl_uint *)ctx->h)[i] = ((cl_uint __global*)uctxs[tid].h)[i];
-        }
-		
-#pragma unroll
-        for (int i = 0; i < 4; ++i)
-        {
-            ((cl_uint *)ctx->t)[i] = ((cl_uint __global*)uctxs[tid].t)[i];
-        }
-
-
-		
-        //====================================================================//
-        //  Hash public key, message & one-time public key
-        //====================================================================//
-#pragma unroll
-        for (j = 0; ctx->c < BUF_SIZE_8 && j < PK_SIZE_8 + NUM_SIZE_8; ++j)
-        {
-            ctx->b[ctx->c++] = rem[j];
-        }
-
-		/* ?? amin ?? */
-		cl_ulong sdata1;
-		cl_ulong sdata2;
-		HOST_B2B_H(sdata1, sdata2);
-        /* ?? amin ?? */
-
-#pragma unroll
-        for ( ; j < PK_SIZE_8 + NUM_SIZE_8; )
-        {
-            HOST_B2B_H(ctx, aux); 
-           
-#pragma unroll
-            for ( ; ctx->c < BUF_SIZE_8 && j < PK_SIZE_8 + NUM_SIZE_8; ++j)
-            {
-                ctx->b[ctx->c++] = rem[j];
-            }
-        }
-
-		
-        //====================================================================//
-        //  Finalize hash
-        //====================================================================//
-        HOST_B2B_H_LAST(ctx, aux); 
-
-		
-#pragma unroll
-        for (j = 0; j < NUM_SIZE_8; ++j)
-        {
-            ((uint8_t *)ldata)[NUM_SIZE_8 - j - 1]
-                = (ctx->h[j >> 3] >> ((j & 7) << 3)) & 0xFF;
-        }
-
-		
-        //====================================================================//    
-        //  Dump result to global memory -- BIG ENDIAN
-        //====================================================================//
-        j = ((cl_ulong *)ldata)[3] < Q3
-            || ((cl_ulong *)ldata)[3] == Q3 && (
-                ((cl_ulong *)ldata)[2] < Q2
-                || ((cl_ulong *)ldata)[2] == Q2 && (
-                    ((cl_ulong *)ldata)[1] < Q1
-                    || ((cl_ulong *)ldata)[1] == Q1
-                    && ((cl_ulong *)ldata)[0] < Q0
-                )
-            );
-
-        //invalid[tid] = (1 - j) * (tid + 1);
-
-		
-#pragma unroll
-        for (int i = 0; i < NUM_SIZE_8; ++i)
-        {
-            ((uint8_t __global *)hashes)[tid * NUM_SIZE_8 + NUM_SIZE_8 - i - 1]
-                = ((uint8_t *)ldata)[i];
-        }
-        
-		
-        // rehash out of bounds hash
-        while(!j)
-        {
-            //aminm memset(ctx->b, 0, BUF_SIZE_8);
-#pragma unroll
-			for (int am = 0; am < BUF_SIZE_8; am++)
-			{
-				ctx->b[am] = 0;
-			}
-			B2B_IV(ctx->h);
-            
-			ctx->h[0] ^= 0x01010000 ^ NUM_SIZE_8;
-            
-			//aminm memset(ctx->t, 0, 16);
-			ctx->t[0] = 0;
-			ctx->t[1] = 0;
-            
-			ctx->c = 0;
-
-			
-            //====================================================================//
-            //  Hash previous hash
-            //====================================================================//
-            #pragma unroll
-            for (j = 0; ctx->c < BUF_SIZE_8 && j < NUM_SIZE_8; ++j)
-            {
-                ctx->b[ctx->c++]
-                    = ((const uint8_t  __global *)(hashes + tid*NUM_SIZE_32))[j];
-            }
-			
-            #pragma unroll
-            for ( ; j < NUM_SIZE_8; )
-            {
-                HOST_B2B_H(ctx, aux);
-            
-            #pragma unroll
-                for ( ; ctx->c < BUF_SIZE_8 && j < NUM_SIZE_8; ++j)
-                {
-                    ctx->b[ctx->c++]
-                        = ((const uint8_t __global *)(hashes + tid * NUM_SIZE_32))[j];
-                }
-            }
-
-			
-            //====================================================================//
-            //  Finalize hash
-            //====================================================================//
-            HOST_B2B_H_LAST(ctx, aux);
-
-            #pragma unroll
-            for (j = 0; j < NUM_SIZE_8; ++j)
-            {
-                ((uint8_t *)ldata)[NUM_SIZE_8 - j - 1]
-                    = (ctx->h[j >> 3] >> ((j & 7) << 3)) & 0xFF;
-            }
-
-			
-            //====================================================================//
-            //  Dump result to global memory -- BIG ENDIAN
-            //====================================================================//
-            j = ((cl_ulong *)ldata)[3] < Q3
-                || ((cl_ulong *)ldata)[3] == Q3 && (
-                    ((cl_ulong *)ldata)[2] < Q2
-                    || ((cl_ulong *)ldata)[2] == Q2 && (
-                        ((cl_ulong *)ldata)[1] < Q1
-                        || ((cl_ulong *)ldata)[1] == Q1
-                        && ((cl_ulong *)ldata)[0] < Q0
-                    )
-                );
-
-				
-            #pragma unroll
-            for (int i = 0; i < NUM_SIZE_8; ++i)
-            {
-                    ((uint8_t __global *)hashes)[ (tid+1) * NUM_SIZE_8 - i - 1]
-                        = ((uint8_t *)ldata)[i];
-            }
-
-        }
-
-		return ;
-	}
-}
 
 
 
@@ -931,3 +682,469 @@ __kernel void InitPrehash(
 
     return;
 }
+///////////////////////////////////////////////////////////////////////////////
+//  Uncompleted first iteration of hashes precalculation
+////////////////////////////////////////////////////////////////////////////////
+__kernel void UncompleteInitPrehash(
+	// data: pk || mes || w || padding || x || sk
+	global const cl_uint  * data,
+	// hashes
+	global uctx_t * uctxs1,
+	global uctx_t * uctxs2,
+	cl_ulong  memsize1,
+	cl_ulong  memsize2,
+	cl_uint memCount
+
+)
+{
+	cl_uint tid = get_local_id(0);
+
+	// shared memory
+	__local  cl_uint sdata[ROUND_PK_SIZE_32];
+
+#pragma unroll
+	for (int i = 0; i < PK_SIZE_32_BLOCK; ++i)
+	{
+		sdata[PK_SIZE_32_BLOCK * tid + i] = data[PK_SIZE_32_BLOCK * tid + i];
+	}
+
+	barrier(CLK_LOCAL_MEM_FENCE);
+
+	tid = get_global_id(0);
+
+	if (tid  < N_LEN)
+	{
+		cl_uint j;
+
+		// public key
+		// PK_SIZE_8 bytes
+		__local cl_uint * pk = sdata;
+
+		// local memory
+		// 472 bytes
+		cl_uint ldata[118];
+
+		// 32 * 64 bits = 256 bytes 
+		cl_ulong * aux = (cl_ulong *)ldata;
+		// (212 + 4) bytes 
+		ctx_t * ctx = (ctx_t *)(ldata + 64);
+
+		//====================================================================//
+		//  Initialize context
+		//====================================================================//
+		for (int am = 0; am < BUF_SIZE_8; am++)
+		{
+			ctx->b[am] = 0;
+		}
+		B2B_IV(ctx->h);
+		ctx->h[0] ^= 0x01010000 ^ NUM_SIZE_8;
+		ctx->t[0] = 0;
+		ctx->t[1] = 0;
+		ctx->c = 0;
+
+		//====================================================================//
+		//  Hash tid
+		//====================================================================//
+#pragma unroll
+		for (j = 0; ctx->c < BUF_SIZE_8 && j < INDEX_SIZE_8; ++j)
+		{
+			ctx->b[ctx->c++] = ((const uint8_t *)&tid)[INDEX_SIZE_8 - j - 1];
+		}
+
+		//====================================================================//
+		//  Hash constant message
+		//====================================================================//
+#pragma unroll
+		for (j = 0; ctx->c < BUF_SIZE_8 && j < CONST_MES_SIZE_8; ++j)
+		{
+			ctx->b[ctx->c++]
+				= (
+					!((7 - (j & 7)) >> 1)
+					* ((j >> 3) >> (((~(j & 7)) & 1) << 3))
+					) & 0xFF;
+		}
+
+		while (j < CONST_MES_SIZE_8)
+		{
+			HOST_B2B_H(ctx, aux);
+
+			for (; ctx->c < BUF_SIZE_8 && j < CONST_MES_SIZE_8; ++j)
+			{
+				ctx->b[ctx->c++]
+					= (
+						!((7 - (j & 7)) >> 1)
+						* ((j >> 3) >> (((~(j & 7)) & 1) << 3))
+						) & 0xFF;
+			}
+		}
+
+		//====================================================================//
+		//  Hash public key
+		//====================================================================//
+#pragma unroll
+		for (j = 0; ctx->c < BUF_SIZE_8 && j < PK_SIZE_8; ++j)
+		{
+			ctx->b[ctx->c++] = ((const uint8_t __local *)pk)[j];
+		}
+
+#pragma unroll
+		for (; j < PK_SIZE_8; )
+		{
+			HOST_B2B_H(ctx, aux);
+
+#pragma unroll
+			for (; ctx->c < BUF_SIZE_8 && j < PK_SIZE_8; ++j)
+			{
+				ctx->b[ctx->c++] = ((const uint8_t __local *)pk)[j];
+			}
+		}
+
+		//====================================================================//
+		//  Dump result to global memory
+		//====================================================================//
+		if (tid < memsize1)
+		{
+#pragma unroll
+			for (int i = 0; i < 16; ++i)
+			{
+				((cl_uint global *)uctxs1[tid].h)[i] = ((cl_uint *)ctx->h)[i];
+			}
+
+#pragma unroll
+			for (int i = 0; i < 4; ++i)
+			{
+				((cl_uint global *)uctxs1[tid].t)[i] = ((cl_uint *)ctx->t)[i];
+				//if(tid==0)printf("%d", ((cl_uint *)ctx->t)[i]);
+			}
+		}
+		else
+		{
+#pragma unroll
+			for (int i = 0; i < 16; ++i)
+			{
+				((cl_uint global *)uctxs2[tid- memsize1].h)[i] = ((cl_uint *)ctx->h)[i];
+				
+			}
+
+#pragma unroll
+			for (int i = 0; i < 4; ++i)
+			{
+				((cl_uint global *)uctxs2[tid- memsize1].t)[i] = ((cl_uint *)ctx->t)[i];
+			}
+		}
+	}
+
+	return;
+}
+
+__kernel  void CompleteInitPrehash(
+	// data: pk || mes || w || padding || x || sk
+	global const cl_uint * data,
+	// unfinalized hashes contexts
+	global const uctx_t * uctxs1,
+	global const uctx_t * uctxs2,
+	cl_ulong  memsize1,
+	cl_ulong  memsize2,
+	cl_uint memCount,
+	// hashes
+	global cl_uint * hashes,
+	// indices of invalid range hashes
+	global cl_uint * invalid
+)
+{
+	cl_uint j;
+	cl_uint tid = get_local_id(0);
+
+	// shared memory
+	__local  cl_uint sdata[ROUND_NP_SIZE_32];
+
+#pragma unroll
+	for (int i = 0; i < NP_SIZE_32_BLOCK; ++i)
+	{
+		sdata[NP_SIZE_32_BLOCK * tid + i]
+			= data[NP_SIZE_32_BLOCK * tid + NUM_SIZE_32 + i];
+	}
+
+	barrier(CLK_LOCAL_MEM_FENCE);
+
+	tid = get_global_id(0);
+
+
+	if (tid < N_LEN)
+	{
+		//if (tid == 0)printf("\n AA");
+		// mes || w
+		// PK_SIZE_8 + NUM_SIZE_8 bytes
+		__local uint8_t * rem = (__local uint8_t *)sdata + PK_SIZE_8 - NUM_SIZE_8;
+		/*uint8_t rem[ROUND_NP_SIZE_32*4];
+		for (int rr = 0; rr<ROUND_NP_SIZE_32*4; rr++)
+		{
+			uint8_t tmpData = ((uint8_t __local *)sdata + PK_SIZE_8 - NUM_SIZE_8)[rr];
+			rem[rr] = tmpData ;
+		}
+		*/
+		/*
+		OR
+		for (int rr = 0; rr<ROUND_NP_SIZE_32; rr++)
+		{
+			rem[rr] = *((uint8_t *)sdata + PK_SIZE_8 - NUM_SIZE_8 )+rr;
+		}
+
+		*/
+
+		// local memory
+		// 472 bytes
+		cl_uint ldata[118];
+
+		// 32 * 64 bits = 256 bytes 
+		cl_ulong * aux = (cl_ulong *)ldata;
+		// (212 + 4) bytes 
+		ctx_t * ctx = (ctx_t *)(ldata + 64);
+
+
+		//====================================================================//
+		//  Initialize context
+		//====================================================================//
+
+		ctx->c = CONTINUE_POS;
+
+#pragma unroll
+		for (
+			j = CONST_MES_SIZE_8 - BUF_SIZE_8 + PK_SIZE_8 - 1;
+			ctx->c < BUF_SIZE_8 && j < CONST_MES_SIZE_8;
+			++j
+			)
+		{
+			ctx->b[ctx->c++]
+				= (
+					!((7 - (j & 7)) >> 1)
+					* ((j >> 3) >> (((~(j & 7)) & 1) << 3))
+					) & 0xFF;
+		}
+
+		ctx->c = 0;
+
+
+#pragma unroll
+		for (; j < CONST_MES_SIZE_8; ++j)
+		{
+			ctx->b[ctx->c++]
+				= (
+					!((7 - (j & 7)) >> 1)
+					* ((j >> 3) >> (((~(j & 7)) & 1) << 3))
+					) & 0xFF;
+		}
+
+
+#pragma unroll
+		for (int i = 0; i < NUM_SIZE_32; ++i)
+		{
+			((cl_uint *)(ctx->b + ctx->c))[i] = ((cl_uint __global*)data)[i];
+		}
+
+		// last byte of public key
+		ctx->b[ctx->c + NUM_SIZE_8] = ((uint8_t __global*)data)[NUM_SIZE_8];
+
+
+		ctx->c += PK_SIZE_8;
+		if (tid < memsize1)
+		{
+#pragma unroll
+			for (int i = 0; i < 16; ++i)
+			{
+				((cl_uint *)ctx->h)[i] = ((cl_uint __global*)uctxs1[tid].h)[i];
+			}
+
+#pragma unroll
+			for (int i = 0; i < 4; ++i)
+			{
+				((cl_uint *)ctx->t)[i] = ((cl_uint __global*)uctxs1[tid].t)[i];
+				
+			}
+		}
+		else
+		{
+#pragma unroll
+			for (int i = 0; i < 16; ++i)
+			{
+				((cl_uint *)ctx->h)[i] = ((cl_uint __global*)uctxs2[tid- memsize1].h)[i];
+			}
+
+#pragma unroll
+			for (int i = 0; i < 4; ++i)
+			{
+				((cl_uint *)ctx->t)[i] = ((cl_uint __global*)uctxs2[tid- memsize1].t)[i];
+			}
+
+		}
+
+
+
+		//====================================================================//
+		//  Hash public key, message & one-time public key
+		//====================================================================//
+#pragma unroll
+		for (j = 0; ctx->c < BUF_SIZE_8 && j < PK_SIZE_8 + NUM_SIZE_8; ++j)
+		{
+			ctx->b[ctx->c++] = rem[j];
+		}
+
+
+#pragma unroll
+		for (; j < PK_SIZE_8 + NUM_SIZE_8; )
+		{
+			HOST_B2B_H(ctx, aux);
+
+#pragma unroll
+			for (; ctx->c < BUF_SIZE_8 && j < PK_SIZE_8 + NUM_SIZE_8; ++j)
+			{
+				ctx->b[ctx->c++] = rem[j];
+			}
+		}
+
+
+		//====================================================================//
+		//  Finalize hash
+		//====================================================================//
+		HOST_B2B_H_LAST(ctx, aux);
+
+
+#pragma unroll
+		for (j = 0; j < NUM_SIZE_8; ++j)
+		{
+			((uint8_t *)ldata)[NUM_SIZE_8 - j - 1]
+				= (ctx->h[j >> 3] >> ((j & 7) << 3)) & 0xFF;
+		}
+
+
+		//====================================================================//    
+		//  Dump result to global memory -- BIG ENDIAN
+		//====================================================================//
+		j = ((cl_ulong *)ldata)[3] < Q3
+			|| ((cl_ulong *)ldata)[3] == Q3 && (
+			((cl_ulong *)ldata)[2] < Q2
+				|| ((cl_ulong *)ldata)[2] == Q2 && (
+				((cl_ulong *)ldata)[1] < Q1
+					|| ((cl_ulong *)ldata)[1] == Q1
+					&& ((cl_ulong *)ldata)[0] < Q0
+					)
+				);
+
+//#pragma unroll
+		for (int i = 0; i < NUM_SIZE_8; ++i)
+		{
+			((uint8_t __global *)hashes)[tid * NUM_SIZE_8 + NUM_SIZE_8 - i - 1]
+				= ((uint8_t *)ldata)[i];
+			if (((uint8_t __global *)hashes)[tid * NUM_SIZE_8 + NUM_SIZE_8 - i - 1] != ((uint8_t *)ldata)[i])
+			{
+				printf("Errorrr 1 tid %d  ,i %d ,  uint8_t %d", tid, i, ((uint8_t *)ldata)[i]);
+			}
+		}
+		//if (tid == Sol_Index)
+		//{
+		//	for (int i = 0; i < 32; ++i)
+		//	{
+		//	//	printf("tid %d  ,i %d ,  ldata %d", tid, i, ((uint8_t __global *)hashes)[tid * NUM_SIZE_8 + NUM_SIZE_8 - i - 1]);
+		//	//	printf("tid %d  ,i %d ,  uint8_t %d", tid, i, ((uint8_t *)ldata)[i]);
+		//	
+		//	if (((uint8_t __global *)hashes)[tid * NUM_SIZE_8 + NUM_SIZE_8 - i - 1] != ((uint8_t *)ldata)[i])
+		//	{
+		//		printf("Er22222  tid %d  ,i %d ,  uint8_t %d", tid, i, ((uint8_t *)ldata)[i]);
+		//	}
+
+		//	}
+
+		//}
+		// rehash out of bounds hash
+		while (!j)
+		{
+			//aminm memset(ctx->b, 0, BUF_SIZE_8);
+#pragma unroll
+			for (int am = 0; am < BUF_SIZE_8; am++)
+			{
+				ctx->b[am] = 0;
+			}
+			B2B_IV(ctx->h);
+
+			ctx->h[0] ^= 0x01010000 ^ NUM_SIZE_8;
+
+			//aminm memset(ctx->t, 0, 16);
+			ctx->t[0] = 0;
+			ctx->t[1] = 0;
+
+			ctx->c = 0;
+
+
+			//====================================================================//
+			//  Hash previous hash
+			//====================================================================//
+#pragma unroll
+			for (j = 0; ctx->c < BUF_SIZE_8 && j < NUM_SIZE_8; ++j)
+			{
+				ctx->b[ctx->c++]
+					= ((const uint8_t  __global *)(hashes + tid * NUM_SIZE_32))[j];
+			}
+
+#pragma unroll
+			for (; j < NUM_SIZE_8; )
+			{
+				HOST_B2B_H(ctx, aux);
+
+#pragma unroll
+				for (; ctx->c < BUF_SIZE_8 && j < NUM_SIZE_8; ++j)
+				{
+					ctx->b[ctx->c++]
+						= ((const uint8_t __global *)(hashes + tid * NUM_SIZE_32))[j];
+				}
+			}
+
+
+			//====================================================================//
+			//  Finalize hash
+			//====================================================================//
+			HOST_B2B_H_LAST(ctx, aux);
+
+#pragma unroll
+			for (j = 0; j < NUM_SIZE_8; ++j)
+			{
+				((uint8_t *)ldata)[NUM_SIZE_8 - j - 1]
+					= (ctx->h[j >> 3] >> ((j & 7) << 3)) & 0xFF;
+			}
+
+
+			//====================================================================//
+			//  Dump result to global memory -- BIG ENDIAN
+			//====================================================================//
+			j = ((cl_ulong *)ldata)[3] < Q3
+				|| ((cl_ulong *)ldata)[3] == Q3 && (
+				((cl_ulong *)ldata)[2] < Q2
+					|| ((cl_ulong *)ldata)[2] == Q2 && (
+					((cl_ulong *)ldata)[1] < Q1
+						|| ((cl_ulong *)ldata)[1] == Q1
+						&& ((cl_ulong *)ldata)[0] < Q0
+						)
+					);
+
+
+#pragma unroll
+			for (int i = 0; i < NUM_SIZE_8; ++i)
+			{
+				((uint8_t __global *)hashes)[(tid + 1) * NUM_SIZE_8 - i - 1]
+					= ((uint8_t *)ldata)[i];
+
+				
+			}
+
+	
+
+		}
+
+
+	
+	}
+
+
+
+	return;
+}
+
