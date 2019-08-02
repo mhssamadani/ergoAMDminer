@@ -3,12 +3,17 @@ OpenCL miner for [ergoplatform.com](https://github.com/ergoplatform)
 
 You can find CUDA miner at:  [CUDA miner](https://github.com/ergoplatform/Autolykos-GPU-miner/tree/master/secp256k1)
 
-Please note that this is the first release of the OpenCL miner and needs some optimization for improved hashrate.
-
-Update: hashrate is 22.5Mh/s for rx570-8g, 23.5 for rx580-8g, and 25 for rx Vega56. 
+~~Please note that this is the first release of the OpenCL miner and needs some optimization for improved hashrate.~~
 
 The code is based on opencl 1.2 and tested on RX570, RX580, and RX VEGA56.
 
+Reported Hashrates:
+* rx570-8g: 22-24Mh/s 
+* rx580-8g: 23-25Mh/s 
+* rx Vega56: 24-26Mh/s. 
+
+
+# Configuration
 These files must be in the same folder as Executable file:
   * Miningkernel.cl
   * Prehashkernel.cl
@@ -17,7 +22,11 @@ These files must be in the same folder as Executable file:
   * Libcurl.dll( in windows)
   * Config.json
   
- Change the config.json file with your seed and node's address. For now only use keepPrehash:false.
+ Change the config.json file with __your seed__ and node's address. 
+ 
+ ~~For now only use keepPrehash:false.~~
+ 
+ Set __keepPrehash: true__ in config.json file.
  
  # Requirements (Linux)
  
