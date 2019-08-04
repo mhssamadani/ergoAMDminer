@@ -74,7 +74,7 @@ for build miner or uncomment for build tester
  
 3- Run make 
 
-4- If make completed successfully there will appear an executable **ergoAMDminer/Ubunt/ErgoOpenCL** that can start with **./ErgoOpenCL** 
+4- If make completed successfully there will appear an executable **ergoAMDminer/Ubuntu/ErgoOpenCL** that can start with **./ErgoOpenCL** 
  
  
 # Build (Windows)
