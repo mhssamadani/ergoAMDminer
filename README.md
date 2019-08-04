@@ -73,6 +73,8 @@ for build miner or uncomment for build tester
 2- Change directory to Ubuntu
  
 3- Run make 
+
+4- If make completed successfully there will appear an executable **ergoAMDminer/Ubunt/ErgoOpenCL** that can start with **./ErgoOpenCL** 
  
  
 # Build (Windows)
@@ -108,5 +110,5 @@ in ErgoOpenCL.cpp file comment
 
 *#define _TEST_* 
 
-for build miner or uncomment for build tester
+for build miner or uncomment for build tester.
 
