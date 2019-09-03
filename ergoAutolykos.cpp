@@ -379,6 +379,32 @@ void ergoAutolykos::MinerThread(CLWarpper *clw,int deviceId, info_t * info, std:
 
 
 }
+
+bool ispartof(char* w1, char* w2)
+{
+	int i = 0;
+	int j = 0;
+
+
+	while (w1[i] != '\0') {
+		if (w1[i] == w2[j])
+		{
+			int init = i;
+			while (w1[i] == w2[j] && w2[j] != '\0')
+			{
+				j++;
+				i++;
+			}
+			if (w2[j] == '\0') {
+				return true;
+			}
+			j = 0;
+		}
+		i++;
+	}
+	return false;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 //
 ////////////////////////////////////////////////////////////////////////////////
@@ -463,6 +489,21 @@ int ergoAutolykos::startAutolykos(int argc, char ** argv)
         clGetDeviceIDs(platforms[i], CL_DEVICE_TYPE_GPU, 0, NULL, &deviceCount);
         device_ids = (cl_device_id*) malloc(sizeof(cl_device_id) * deviceCount);
         clGetDeviceIDs(platforms[i], CL_DEVICE_TYPE_GPU, deviceCount, device_ids, NULL);
+
+
+		char *pName = NULL;
+		size_t size;
+		clGetPlatformInfo(platforms[i], CL_PLATFORM_NAME, NULL, pName, &size); // get size of profile char array
+		pName = (char*)malloc(size);
+		clGetPlatformInfo(platforms[i], CL_PLATFORM_NAME, size, pName, NULL); // get profile char array
+		//cout << pName << endl;
+		char *aMD = (char *)"AMD";
+		char *srcName;
+		if (!ispartof(pName, aMD))
+		{
+			continue;
+
+		}
         for(int j=0;j<deviceCount;j++)
         {
 			clw[TotaldeviceCount] = new CLWarpper(platforms[i],device_ids[j]);
@@ -471,9 +512,11 @@ int ergoAutolykos::startAutolykos(int argc, char ** argv)
 
     }
 
-	LOG(INFO) << "Number Of GPUs: " << (int)TotaldeviceCount;
+	LOG(INFO) << "Number Of AMD GPUs: " << (int)TotaldeviceCount;
 	int status = EXIT_SUCCESS;
 
+	if(TotaldeviceCount <= 0)
+		return EXIT_SUCCESS;
 
 	//LOG(INFO) << "Using " << deviceCount << " GPU devices";
 	//========================================================================//
