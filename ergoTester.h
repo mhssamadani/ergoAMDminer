@@ -448,7 +448,7 @@ int TestPerformance(
 		std::chrono::system_clock::now().time_since_epoch()
 		);
 
-	for (; ms.count() < 60000; ++iter)
+	for (; ms.count() < 600; ++iter)
 	{
 
 		//// calculate solution candidates
