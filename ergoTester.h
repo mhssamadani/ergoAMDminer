@@ -72,8 +72,6 @@ public:
 
 	}
 CLWarpper *clw;
-PreHashClass *ph ;
-MiningClass *min ;
 
 /* convert the kernel file into a string */
 int convertToString(const char *filename, std::string& s)
@@ -253,32 +251,33 @@ int TestSolutions(
 	////  Test solutions
 	////========================================================================//
 	cl_ulong base = 0;
+	PreHashClass *ph = new PreHashClass(clw);
 
 	if (keepPrehash)
 	{
 		ph->hUncompleteInitPrehash(data_d, uctxs_d,memSize, memCount);
 	}
 
-	ph->Prehash(keepPrehash, data_d, uctxs_d, memSize,memCount, hashes_d, res_d/*,ldata*/);
-
-
-
-	//// calculate unfinalized hash of message
-
+	
 	std::chrono::milliseconds ms = std::chrono::milliseconds::zero();
 
 	std::chrono::milliseconds start = std::chrono::duration_cast<std::chrono::milliseconds>(
 		std::chrono::system_clock::now().time_since_epoch()
 		);
 
-
-	min->InitMining(&ctx_h, (cl_uint *)info->mes, NUM_SIZE_8);
+	ph->Prehash(keepPrehash, data_d, uctxs_d, memSize,memCount, hashes_d, res_d/*,ldata*/);
 
 	ms = std::chrono::duration_cast<std::chrono::milliseconds>(
 		std::chrono::system_clock::now().time_since_epoch()
 		) - start;
 
-	LOG(INFO) << "Mining time: " << ms.count() << " ms";
+	LOG(INFO) << "Prehash time: " << ms.count() << " ms";
+
+
+	//// calculate unfinalized hash of message
+	MiningClass *min = new MiningClass(clw);
+	min->InitMining(&ctx_h, (cl_uint *)info->mes, NUM_SIZE_8);
+
 
 	//// copy context
 	ret = clw->CopyBuffer(data_d, hdata_d, (2 * PK_SIZE_8 + 2 + 3 * NUM_SIZE_8 + 212 + 4) * sizeof(char), true);
@@ -300,7 +299,7 @@ int TestSolutions(
 	if (nonce != 0x3381BF)
 	{
 		LOG(ERROR) << "Solutions test failed: wrong nonce";
-		//exit(EXIT_FAILURE);
+		exit(EXIT_FAILURE);
 	}
 	
 	////========================================================================//
@@ -410,6 +409,7 @@ int TestPerformance(
 	////  Test solutions
 	////========================================================================//
 	cl_ulong base = 0;
+	PreHashClass* ph = new PreHashClass(clw);
 
 	std::chrono::milliseconds ms = std::chrono::milliseconds::zero();
 
@@ -429,7 +429,7 @@ int TestPerformance(
 	LOG(INFO) << "Prehash time: " << ms.count() << " ms";
 
 	//// calculate unfinalized hash of message
-
+	MiningClass* min = new MiningClass(clw);
 	min->InitMining(&ctx_h, (cl_uint*)info->mes, NUM_SIZE_8);
 
 
@@ -448,7 +448,7 @@ int TestPerformance(
 		std::chrono::system_clock::now().time_since_epoch()
 		);
 
-	for (; ms.count() < 600; ++iter)
+	for (; ms.count() < 60000; ++iter)
 	{
 
 		//// calculate solution candidates
@@ -606,30 +606,6 @@ void TestRequests()
 
 }
 
-bool ispartof(char* w1, char* w2)
-{
-	int i = 0;
-	int j = 0;
-
-
-	while (w1[i] != '\0') {
-		if (w1[i] == w2[j])
-		{
-			int init = i;
-			while (w1[i] == w2[j] && w2[j] != '\0')
-			{
-				j++;
-				i++;
-			}
-			if (w2[j] == '\0') {
-				return true;
-			}
-			j = 0;
-		}
-		i++;
-	}
-	return false;
-}
 
 int testErgo(int argc, char* argv[])
 {
@@ -656,54 +632,8 @@ int testErgo(int argc, char* argv[])
 	//  Check requirements
 	//========================================================================//
 	int status;
+	clw = new CLWarpper(0);
 
-
-	int i, j;
-	char* value;
-	size_t valueSize;
-	cl_uint platformCount;
-	cl_platform_id* platforms;
-	cl_uint TotaldeviceCount = 0;
-	cl_device_id* device_ids;
-	cl_uint maxComputeUnits;
-
-	clGetPlatformIDs(0, NULL, &platformCount);
-	platforms = (cl_platform_id*)malloc(sizeof(cl_platform_id) * platformCount);
-	clGetPlatformIDs(platformCount, platforms, NULL);
-
-	clw = NULL;
-	for (int i = 0; i < platformCount; i++)
-	{
-		cl_uint deviceCount = 0;
-		clGetDeviceIDs(platforms[i], CL_DEVICE_TYPE_GPU, 0, NULL, &deviceCount);
-		device_ids = (cl_device_id*)malloc(sizeof(cl_device_id) * deviceCount);
-		clGetDeviceIDs(platforms[i], CL_DEVICE_TYPE_GPU, deviceCount, device_ids, NULL);
-
-
-		char *pName = NULL;
-		size_t size;
-		clGetPlatformInfo(platforms[i], CL_PLATFORM_NAME, NULL, pName, &size); // get size of profile char array
-		pName = (char*)malloc(size);
-		clGetPlatformInfo(platforms[i], CL_PLATFORM_NAME, size, pName, NULL); // get profile char array
-		cout << pName << endl;
-		char *aMD = (char *)"AMD";
-		char *srcName;
-		if (!ispartof(pName, aMD))
-		{
-			continue;
-
-		}
-		clw = new CLWarpper(platforms[i], device_ids[0]);
-		break;
-
-	}
-
-	if (clw == NULL)
-	{
-		LOG(ERROR) << "DONT DETECT AMD CARD";
-		return EXIT_FAILURE;
-
-	}
 	// CL_DEVICE_MAX_MEM_ALLOC_SIZE
 	cl_ulong max_mem_alloc_size = clw->getMaxAllocSizeMB();
 	printf("  CL_DEVICE_MAX_MEM_ALLOC_SIZE:\t\t%u MByte\n", max_mem_alloc_size);
@@ -774,9 +704,6 @@ int testErgo(int argc, char* argv[])
 	//========================================================================//
 	//  Run solutions correctness tests
 	//========================================================================//
-
-	ph = new PreHashClass(clw);
-	min = new MiningClass(clw);
 
 	info.keepPrehash = 1;
 	TestSolutions(&info, x, w);

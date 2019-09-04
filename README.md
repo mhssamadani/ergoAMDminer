@@ -2,21 +2,11 @@
 OpenCL miner for [ergoplatform.com](https://github.com/ergoplatform)
 
 You can find CUDA miner at:  [CUDA miner](https://github.com/ergoplatform/Autolykos-GPU-miner/tree/master/secp256k1)
-# Very Important Notice
-*Due to ERGO's specification (unlike many other coins), it is __NOT SAFE__ to mine using any closed source miner; such a miner could steal your key easily.*
-<blockquote class="twitter-tweet"><p lang="en" dir="ltr">Please be aware of closed-source miners like the following, such a miner could steal your key easily: <a href="https://t.co/Y93wqb2IkA">https://t.co/Y93wqb2IkA</a></p>&mdash; Alex Chepurnoy (@chepurnoy) <a href="https://twitter.com/chepurnoy/status/1155901160915701760?ref_src=twsrc%5Etfw">July 29, 2019</a></blockquote>
 
+Please note that this is the first release of the OpenCL miner and needs some optimization for improved hashrate.
 
-# Hashrate
-The code is based on opencl 1.2 and tested on RX570, RX580, and RX VEGA56.
+The code is based on opencl 1.2 and tested on RX570.
 
-Reported Hashrates:
-* rx570-8g: 22-24Mh/s 
-* rx580-8g: 23-25Mh/s 
-* rx Vega56: 24-26Mh/s. 
-
-
-# Configuration
 These files must be in the same folder as Executable file:
   * Miningkernel.cl
   * Prehashkernel.cl
@@ -25,11 +15,7 @@ These files must be in the same folder as Executable file:
   * Libcurl.dll( in windows)
   * Config.json
   
- Change the config.json file with __your seed__ and node's address. 
- 
- ~~For now only use keepPrehash:false.~~
- 
- Set __keepPrehash: true__ in config.json file.
+ Change the config.json file with your seed and node's address. For now only use keepPrehash:false.
  
  # Requirements (Linux)
  
@@ -74,7 +60,7 @@ for build miner or uncomment for build tester
  
 3- Run make 
 
-4- If make completed successfully there will appear an executable **ergoAMDminer/Ubuntu/ErgoOpenCL** that can start with **./ErgoOpenCL** 
+4- If make completed successfully there will appear an executable **ergoAMDminer/Ubunt/ErgoOpenCL** that can start with **./ErgoOpenCL** 
  
  
 # Build (Windows)
@@ -112,13 +98,3 @@ in ErgoOpenCL.cpp file comment
 
 for build miner or uncomment for build tester.
 
-# Donations and Support
-
-Note that the miner is free to use and we do not charge any fee from what you mine.
-To support all the work we're doing, we welcome donations from ERGO miners!
-
-Bitcoin: 3KkwygpCLs1oEi9aTozFxYunoASV6ZrykJ
-
-Bitcoin: bc1q7flay376e5mcp4ljjxpdp7r6p8yajcjm5mu6wd
-
-ERGO: 9gZPigzM9ieRaCrzRC7YZ4ECFrKmrKuazUoT5U6fcnVoY6YbHN4
