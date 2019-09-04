@@ -98,3 +98,13 @@ in ErgoOpenCL.cpp file comment
 
 for build miner or uncomment for build tester.
 
+# Donations and Support
+
+Note that the miner is free to use and we do not charge any fee from what you mine.
+To support all the work we're doing, we welcome donations from ERGO miners!
+
+Bitcoin: 3KkwygpCLs1oEi9aTozFxYunoASV6ZrykJ
+
+Bitcoin: bc1q7flay376e5mcp4ljjxpdp7r6p8yajcjm5mu6wd
+
+ERGO: 9gZPigzM9ieRaCrzRC7YZ4ECFrKmrKuazUoT5U6fcnVoY6YbHN4
