@@ -15,7 +15,7 @@ ergoAutolykos::~ergoAutolykos()
 ////////////////////////////////////////////////////////////////////////////////
 //  Miner thread cycle
 ////////////////////////////////////////////////////////////////////////////////
-void ergoAutolykos::MinerThread(CLWarpper *clw,int deviceId, info_t * info, std::vector<double>* hashrates)
+void ergoAutolykos::MinerThread(CLWarpper *clw, int deviceId, info_t * info, std::vector<double>* hashrates)
 {
 	LOG(INFO) << "Gpu " << deviceId << "Started";
 
@@ -77,7 +77,7 @@ void ergoAutolykos::MinerThread(CLWarpper *clw,int deviceId, info_t * info, std:
 	cl_ulong max_mem_alloc_size = clw->getDeviceInfoInt64(CL_DEVICE_MAX_MEM_ALLOC_SIZE);
 	cl_ulong mem_size = clw->getDeviceInfoInt64(CL_DEVICE_GLOBAL_MEM_SIZE);
 
-	LOG(INFO) <<"GPU " << clw->m_gpuIndex << " mem_size: " << clw->getGlobalSizeMB() << "  (MB) , max_mem_alloc_size: " << clw->getMaxAllocSizeMB() << " (MB) "; 
+	LOG(INFO) << "GPU " << clw->m_gpuIndex << " mem_size: " << clw->getGlobalSizeMB() << "  (MB) , max_mem_alloc_size: " << clw->getMaxAllocSizeMB() << " (MB) ";
 	size_t uctx_t_count = max_mem_alloc_size / sizeof(uctx_t);
 
 	size_t memCount = (N_LEN / uctx_t_count) + 1;
@@ -85,15 +85,15 @@ void ergoAutolykos::MinerThread(CLWarpper *clw,int deviceId, info_t * info, std:
 
 	if (max_mem_alloc_size < MIN_FREE_MEMORY)
 	{
-		LOG(ERROR) <<"GPU " << clw->m_gpuIndex << " Not enough GPU memory for mining,"
+		LOG(ERROR) << "GPU " << clw->m_gpuIndex << " Not enough GPU memory for mining,"
 			<< " minimum 2.8 GiB needed";
 
 		return;
 	}
 
-	if(keepPrehash && (memCount > 2 || memCount < 0 ))
+	if (keepPrehash && (memCount > 2 || memCount < 0))
 	{
-		LOG(ERROR) <<"GPU " << clw->m_gpuIndex << "C: Error in Memory Alloc for KeepPrehash";
+		LOG(ERROR) << "GPU " << clw->m_gpuIndex << "C: Error in Memory Alloc for KeepPrehash";
 		keepPrehash = false;
 	}
 
@@ -157,57 +157,57 @@ void ergoAutolykos::MinerThread(CLWarpper *clw,int deviceId, info_t * info, std:
 	cl_uint* hindices_d = (cl_uint*)malloc(sizeof(cl_uint));
 	allocatedMem += sizeof(cl_uint);
 
-	memset(hindices_d,0, sizeof(cl_uint));
+	memset(hindices_d, 0, sizeof(cl_uint));
 	clw->CopyBuffer(indices_d, hindices_d, sizeof(cl_uint), false);
 
 	// unfinalized hash contexts
 	// if keepPrehash == true // N_LEN * 80 bytes // 5 GiB
 	cl_mem uctxs_d[100];
 	cl_ulong memSize[100];
-	uctxs_d[0] = uctxs_d[1] = NULL;	
+	uctxs_d[0] = uctxs_d[1] = NULL;
 	if (keepPrehash)
 	{
 		size_t preS = (cl_uint)N_LEN * sizeof(uctx_t);
-		if(memCount > 2 || memCount < 0 )
+		if (memCount > 2 || memCount < 0)
 		{
 			LOG(INFO) << "C: Error in Memory Alloc for KeepPrehash";
 			keepPrehash = false;
 
 		}
-		else if ( (allocatedMem + preS) < mem_size)
+		else if ((allocatedMem + preS) < mem_size)
 		{
 
 			size_t last = N_LEN % uctx_t_count;
 			size_t sz = 0;
-			for (size_t i = 0; i < memCount ; i++)
+			for (size_t i = 0; i < memCount; i++)
 			{
 				if (i == memCount - 1)
 				{
 					uctxs_d[i] = clw->Createbuffer(last * sizeof(uctx_t), CL_MEM_READ_WRITE);
 					//huctxs_d[i] = (uctx_t*)malloc(last);
-					memSize[i] = i * uctx_t_count  + last;
+					memSize[i] = i * uctx_t_count + last;
 				}
 				else
 				{
 					uctxs_d[i] = clw->Createbuffer(uctx_t_count * sizeof(uctx_t), CL_MEM_READ_WRITE);
 					//huctxs_d[i] = (uctx_t*)malloc(uctx_t_count * sizeof(uctx_t));
-					memSize[i] = i*uctx_t_count + uctx_t_count;
+					memSize[i] = i * uctx_t_count + uctx_t_count;
 				}
 				if (uctxs_d[i] == NULL)
 				{
 					LOG(INFO) << "A: Error in Memory Alloc for KeepPrehash";
 					keepPrehash = false;
 				}
-				
+
 			}
 		}
 		else
 		{
-					LOG(INFO) << "B: Error in Memory Alloc for KeepPrehash";
-					keepPrehash = false;
+			LOG(INFO) << "B: Error in Memory Alloc for KeepPrehash";
+			keepPrehash = false;
 
 		}
-	
+
 	}
 
 
@@ -233,7 +233,7 @@ void ergoAutolykos::MinerThread(CLWarpper *clw,int deviceId, info_t * info, std:
 	if (keepPrehash)
 	{
 		LOG(INFO) << "Preparing unfinalized hashes on GPU " << deviceId;
-		ph->hUncompleteInitPrehash(data_d, uctxs_d,memSize, memCount);
+		ph->hUncompleteInitPrehash(data_d, uctxs_d, memSize, memCount);
 	}
 
 	int cntCycles = 0;
@@ -314,7 +314,7 @@ void ergoAutolykos::MinerThread(CLWarpper *clw,int deviceId, info_t * info, std:
 			clw->CopyBuffer(data_d, hdata_d, (2 * PK_SIZE_8 + 2 + 3 * NUM_SIZE_8 + 212 + 4) * sizeof(char), false);
 
 			VLOG(1) << "Starting prehashing with new block data";
-			ph->Prehash(keepPrehash, data_d, uctxs_d, memSize,memCount, hashes_d, res_d/*,ldata*/);
+			ph->Prehash(keepPrehash, data_d, uctxs_d, memSize, memCount, hashes_d, res_d/*,ldata*/);
 
 			//// calculate unfinalized hash of message
 			VLOG(1) << "Starting InitMining";
@@ -367,7 +367,7 @@ void ergoAutolykos::MinerThread(CLWarpper *clw,int deviceId, info_t * info, std:
 			PostPuzzleSolution(to, pkstr, w_h, nonce, res_h);
 
 			state = STATE_KEYGEN;
-			memset(indices_d,0, sizeof(cl_uint));
+			memset(indices_d, 0, sizeof(cl_uint));
 		}
 		//else
 		//{
@@ -379,6 +379,32 @@ void ergoAutolykos::MinerThread(CLWarpper *clw,int deviceId, info_t * info, std:
 
 
 }
+
+bool ispartof(char* w1, char* w2)
+{
+	int i = 0;
+	int j = 0;
+
+
+	while (w1[i] != '\0') {
+		if (w1[i] == w2[j])
+		{
+			int init = i;
+			while (w1[i] == w2[j] && w2[j] != '\0')
+			{
+				j++;
+				i++;
+			}
+			if (w2[j] == '\0') {
+				return true;
+			}
+			j = 0;
+		}
+		i++;
+	}
+	return false;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 //
 ////////////////////////////////////////////////////////////////////////////////
@@ -443,37 +469,54 @@ int ergoAutolykos::startAutolykos(int argc, char ** argv)
 		clw[i] = NULL;
 	}
 
-    int i, j;
-    char* value;
-    size_t valueSize;
-    cl_uint platformCount;
-    cl_platform_id* platforms;
-    cl_uint TotaldeviceCount = 0;
-    cl_device_id* device_ids;
-    cl_uint maxComputeUnits;
+	int i, j;
+	char* value;
+	size_t valueSize;
+	cl_uint platformCount;
+	cl_platform_id* platforms;
+	cl_uint TotaldeviceCount = 0;
+	cl_device_id* device_ids;
+	cl_uint maxComputeUnits;
 
-    clGetPlatformIDs(0, NULL, &platformCount);
-    platforms = (cl_platform_id*) malloc(sizeof(cl_platform_id) * platformCount);
-    clGetPlatformIDs(platformCount, platforms, NULL);
+	clGetPlatformIDs(0, NULL, &platformCount);
+	platforms = (cl_platform_id*)malloc(sizeof(cl_platform_id) * platformCount);
+	clGetPlatformIDs(platformCount, platforms, NULL);
 
-	
-    for(int i=0;i<platformCount;i++)
-    {
-    	cl_uint deviceCount = 0;
-        clGetDeviceIDs(platforms[i], CL_DEVICE_TYPE_GPU, 0, NULL, &deviceCount);
-        device_ids = (cl_device_id*) malloc(sizeof(cl_device_id) * deviceCount);
-        clGetDeviceIDs(platforms[i], CL_DEVICE_TYPE_GPU, deviceCount, device_ids, NULL);
-        for(int j=0;j<deviceCount;j++)
-        {
-			clw[TotaldeviceCount] = new CLWarpper(platforms[i],device_ids[j]);
-        	TotaldeviceCount++;
-        }
 
-    }
+	for (int i = 0; i < platformCount; i++)
+	{
+		cl_uint deviceCount = 0;
+		clGetDeviceIDs(platforms[i], CL_DEVICE_TYPE_GPU, 0, NULL, &deviceCount);
+		device_ids = (cl_device_id*)malloc(sizeof(cl_device_id) * deviceCount);
+		clGetDeviceIDs(platforms[i], CL_DEVICE_TYPE_GPU, deviceCount, device_ids, NULL);
 
-	LOG(INFO) << "Number Of GPUs: " << (int)TotaldeviceCount;
+
+		char *pName = NULL;
+		size_t size;
+		clGetPlatformInfo(platforms[i], CL_PLATFORM_NAME, NULL, pName, &size); // get size of profile char array
+		pName = (char*)malloc(size);
+		clGetPlatformInfo(platforms[i], CL_PLATFORM_NAME, size, pName, NULL); // get profile char array
+		//cout << pName << endl;
+		char *aMD = (char *)"AMD";
+		char *srcName;
+		if (!ispartof(pName, aMD))
+		{
+			continue;
+
+		}
+		for (int j = 0; j < deviceCount; j++)
+		{
+			clw[TotaldeviceCount] = new CLWarpper(platforms[i], device_ids[j]);
+			TotaldeviceCount++;
+		}
+
+	}
+
+	LOG(INFO) << "Number Of AMD GPUs: " << (int)TotaldeviceCount;
 	int status = EXIT_SUCCESS;
 
+	if (TotaldeviceCount <= 0)
+		return EXIT_SUCCESS;
 
 	//LOG(INFO) << "Using " << deviceCount << " GPU devices";
 	//========================================================================//
@@ -611,4 +654,3 @@ int ergoAutolykos::startAutolykos(int argc, char ** argv)
 
 	return EXIT_SUCCESS;
 }
-
