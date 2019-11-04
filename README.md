@@ -22,7 +22,7 @@ These files must be in the same folder as Executable file:
   * Prehashkernel.cl
   * Ocldecs.h
   * Ocldefs.h
-  * Libcurl.dll( in windows)
+  * Libcurl.dll( in windows)::: There is a libcurl.dll file in the win64 folder, use it or better replace it with your own built file
   * Config.json
   
  Change the config.json file with __your seed__ and node's address. 
