@@ -367,7 +367,8 @@ void ergoAutolykos::MinerThread(CLWarpper *clw, int deviceId, info_t * info, std
 			PostPuzzleSolution(to, pkstr, w_h, nonce, res_h);
 
 			state = STATE_KEYGEN;
-			memset(indices_d, 0, sizeof(cl_uint));
+			memset(hindices_d, 0, sizeof(cl_uint));
+			clw->CopyBuffer(indices_d, hindices_d, sizeof(cl_uint), false);
 		}
 		//else
 		//{
