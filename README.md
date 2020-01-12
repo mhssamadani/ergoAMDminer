@@ -113,6 +113,19 @@ in ErgoOpenCL.cpp file comment
 *#define _TEST_* 
 
 for build miner or uncomment for build tester.
+# Hiveos
+### Very Important Notice
+<blockquote class="twitter-tweet"><p lang="en" dir="ltr">Hiveos is the ultimate mining platform that allows users to setup, mine and control processes more efficiently and hustle-free across thousands of rigs all in one place. <a href="https://hiveos.farm/">Hiveos</a></blockquote>
+
+*Due to ERGO's whitepaper (unlike many other coins), mining process utilizes __PRIVATE KEYS__, therefor you should change configuration file (/hive/miners/custom/ergoopencl/ergoopencl.conf) with __your seed__  after installing Hiveos miner .*
+
+This means that Hiveos could have access to your seed, so use Hiveos at __your own risk__.
+
+![](https://github.com/mhssamadani/ergoAMDminer/blob/master/Hiveos/Hiveos-Flight_Sheet.png)
+
+Installation URL: <a href="https://github.com/mhssamadani/ergoAMDminer/blob/master/Hiveos/ergoopencl-2.0.tar.gz">link</a>
+
+Replace IP:PORT with your node's IP and PORT
 
 # Donations and Support
 
