@@ -123,7 +123,7 @@ This means that Hiveos could have access to your seed, so use Hiveos at __your o
 
 ![](https://github.com/mhssamadani/ergoAMDminer/blob/master/Hiveos/Hiveos-Flight_Sheet.png)
 
-Installation URL: <a href="https://github.com/mhssamadani/ergoAMDminer/blob/master/Hiveos/ergoopencl-2.0.tar.gz">link</a>
+Installation URL: <a href="https://raw.github.com/mhssamadani/ergoAMDminer/master/Hiveos/ergoopencl-2.0.tar.gz">link</a>
 
 Replace IP:PORT with your node's IP and PORT
 
