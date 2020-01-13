@@ -51,6 +51,12 @@
     <ClCompile Include="request.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="httpapi.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="adl.h">
+      <Filter>Header Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cl_warpper.h">
@@ -93,6 +99,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="request.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="httpapi.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="httplib.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="adl-sdk\adl_functaions.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

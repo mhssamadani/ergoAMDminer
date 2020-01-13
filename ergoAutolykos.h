@@ -5,7 +5,15 @@
 	AUTOLYKOS -- Autolykos puzzle cycle
 
 *******************************************************************************/
+#ifdef _WIN32
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#endif
+
 //#include "bip39/include/bip39/bip39.h"
+#include "httpapi.h"
+
 #include "cryptography.h"
 #include "definitions.h"
 #include "easylogging++.h"
@@ -47,9 +55,10 @@
 using namespace std;
 namespace ch = std::chrono;
 using namespace std::chrono;
-
 class ergoAutolykos
 {
+
+
 public:
 	ergoAutolykos();
 	~ergoAutolykos();
@@ -59,8 +68,11 @@ public:
 	////////////////////////////////////////////////////////////////////////////////
 	//  Miner thread cycle
 	////////////////////////////////////////////////////////////////////////////////
-	static void MinerThread(CLWarpper *oclWrapper, int deviceId, info_t * info, std::vector<double>* hashrates);
+	static void MinerThread(CLWarpper *oclWrapper, int deviceId, info_t * info, std::vector<double>* hashrates, std::vector<int>* tstamps);
 	////////////////////////////////////////////////////////////////////////////////
+	static void PoolSenderThread(CLWarpper *oclWrapper, int deviceId, info_t * info);
+	////////////////////////////////////////////////////////////////////////////////
+
 //  
 ////////////////////////////////////////////////////////////////////////////////
 	int startAutolykos(int argc, char ** argv);

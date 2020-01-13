@@ -35,6 +35,8 @@ public:
 	void hBlockMining(
 		// boundary for puzzle
 		cl_mem bound,
+		// pool boundary for puzzle
+		cl_mem pbound,
 		// data: pk || mes || w || padding || x || sk || ctx
 		cl_mem data,
 		// nonce base
@@ -44,7 +46,13 @@ public:
 		// results
 		cl_mem res,
 		// indices of valid solutions
-		cl_mem valid
+		cl_mem valid,
+		cl_mem vCount,
+		// P results
+		cl_mem Pres,
+		// indices of P valid solutions
+		cl_mem Pvalid,
+		cl_mem pCount
 		);
 
 };

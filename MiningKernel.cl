@@ -6,6 +6,8 @@ __kernel void test()
 __kernel void BlockMining(
 	// boundary for puzzle
 	global const cl_uint* bound,
+	// p boundary for puzzle
+	global const cl_uint* pbound,
 	// data: pk || mes || w || padding || x || sk || ctx
 	global const cl_uint* data,
 	// nonce base
@@ -15,7 +17,17 @@ __kernel void BlockMining(
 	// results
 	global cl_uint* res,
 	// indices of valid solutions
-	global cl_uint* valid)
+	global cl_uint* valid,
+	global cl_uint* vCount,
+
+	// P results
+	global cl_uint* Pres,
+	// indices of P valid solutions
+	global cl_uint* Pvalid,
+	global cl_uint* Pcount
+	
+	)
+
 {
 	cl_uint tid = get_local_id(0);
 
@@ -67,6 +79,7 @@ __kernel void BlockMining(
 		if (tid < NONCES_PER_ITER)
 		{
 			cl_uint j;
+			cl_uint pj;
 			cl_uint non[NONCE_SIZE_32];
 
 			fn_Add(((cl_uint*)& base)[0], tid, 0, non[0], CV);
@@ -311,19 +324,42 @@ __kernel void BlockMining(
 			//================================================================//
 			j = ((cl_ulong*)r)[3] < ((cl_ulong global*)bound)[3] || ((cl_ulong*)r)[3] == ((cl_ulong global*)bound)[3] && (((cl_ulong*)r)[2] < ((cl_ulong global*)bound)[2] || ((cl_ulong*)r)[2] == ((cl_ulong global*)bound)[2] && (((cl_ulong*)r)[1] < ((cl_ulong global*)bound)[1] || ((cl_ulong*)r)[1] == ((cl_ulong global*)bound)[1] && ((cl_ulong*)r)[0] < ((cl_ulong global*)bound)[0]));
 
-			
-			if (j)
-			{
+			pj = ((cl_ulong*)r)[3] < ((cl_ulong global*)pbound)[3] || ((cl_ulong*)r)[3] == ((cl_ulong global*)pbound)[3] && (((cl_ulong*)r)[2] < ((cl_ulong global*)pbound)[2] || ((cl_ulong*)r)[2] == ((cl_ulong global*)pbound)[2] && (((cl_ulong*)r)[1] < ((cl_ulong global*)pbound)[1] || ((cl_ulong*)r)[1] == ((cl_ulong global*)pbound)[1] && ((cl_ulong*)r)[0] < ((cl_ulong global*)pbound)[0]));
 
-				//printf("\n %d", j);
-				valid[0] = tid + 1;
-#pragma unroll
-				for (int i = 0; i < NUM_SIZE_32; ++i)
+			 			
+			if(pj)
+			{
+				cl_uint oldP =  atomic_inc(Pcount);
+				if(oldP < MAX_POOL_RES)
 				{
-					res[i] = r[i];
+					Pvalid[oldP] = tid+1;
+					#pragma unroll
+					for (int i = 0; i < NUM_SIZE_32; ++i)
+					{
+						Pres[oldP * NUM_SIZE_32 + i] = r[i];
+					}
 				}
 
 			}
+
+			if (j)
+			{
+
+				cl_uint oldC =  atomic_inc(vCount);
+
+				if(oldC == 0)
+				{
+				//printf("\n %d", j);
+					valid[0] = tid + 1;
+	#pragma unroll
+					for (int i = 0; i < NUM_SIZE_32; ++i)
+					{
+						res[i] = r[i];
+					}
+				}
+
+			}
+
 		}
 		barrier(CLK_LOCAL_MEM_FENCE);
 	}

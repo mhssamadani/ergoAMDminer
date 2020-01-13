@@ -36,6 +36,7 @@ struct info_t
 
 	// Puzzle data to read
 	uint8_t bound[NUM_SIZE_8];
+	uint8_t poolbound[NUM_SIZE_8];
 	uint8_t mes[NUM_SIZE_8];
 	uint8_t sk[NUM_SIZE_8];
 	uint8_t pk[PK_SIZE_8];
@@ -43,6 +44,7 @@ struct info_t
 	char pkstr[PK_SIZE_4 + 1];
 	int keepPrehash;
 	char to[MAX_URL_SIZE];
+	char pool[MAX_URL_SIZE];
 
 	// Increment when new block is sent by node
 	std::atomic<uint_t> blockId;

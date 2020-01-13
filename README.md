@@ -2,20 +2,34 @@
 OpenCL miner for [ergoplatform.com](https://github.com/ergoplatform)
 
 You can find CUDA miner at:  [CUDA miner](https://github.com/ergoplatform/Autolykos-GPU-miner/tree/master/secp256k1)
+# Very Important Notice
+*Due to ERGO's specification (unlike many other coins), it is __NOT SAFE__ to mine using any closed source miner; such a miner could steal your key easily.*
+<blockquote class="twitter-tweet"><p lang="en" dir="ltr">Please be aware of closed-source miners like the following, such a miner could steal your key easily: <a href="https://t.co/Y93wqb2IkA">https://t.co/Y93wqb2IkA</a></p>&mdash; Alex Chepurnoy (@chepurnoy) <a href="https://twitter.com/chepurnoy/status/1155901160915701760?ref_src=twsrc%5Etfw">July 29, 2019</a></blockquote>
 
-Please note that this is the first release of the OpenCL miner and needs some optimization for improved hashrate.
 
-The code is based on opencl 1.2 and tested on RX570.
+# Hashrate
+The code is based on opencl 1.2 and tested on RX570, RX580, and RX VEGA56.
 
+Reported Hashrates:
+* rx570-8g: 22-24Mh/s 
+* rx580-8g: 23-25Mh/s 
+* rx Vega56: 24-26Mh/s. 
+
+
+# Configuration
 These files must be in the same folder as Executable file:
   * Miningkernel.cl
   * Prehashkernel.cl
   * Ocldecs.h
   * Ocldefs.h
-  * Libcurl.dll( in windows)
+  * Libcurl.dll( in windows)::: There is a libcurl.dll file in the win64 folder, use it or better replace it with your own built file
   * Config.json
   
- Change the config.json file with your seed and node's address. For now only use keepPrehash:false.
+ Change the config.json file with __your seed__ and node's address. 
+ 
+ ~~For now only use keepPrehash:false.~~
+ 
+ Set __keepPrehash: true__ in config.json file.
  
  # Requirements (Linux)
  
@@ -45,7 +59,9 @@ These files must be in the same folder as Executable file:
  
  3 - Build libcurl from sources with Visual Studio [toolchain instruction](https://medium.com/@chuy.max/compile-libcurl-on-windows-with-visual-studio-2017-x64-and-ssl-winssl-cff41ac7971d) 
  
- 4 - Download OpenSSL 1.0.2 [installer from slproweb.com](https://slproweb.com/download/Win64OpenSSL-1_0_2r.exe)
+ 4 - Download OpenSSL 1.0.2 [installer from slproweb.com](https://slproweb.com/download/Win64OpenSSL-1_0_2t.exe)
+ 
+ 5 - Download and install [Visual C++ redistributable](https://aka.ms/vs/16/release/vc_redist.x64.exe)
  
  # Build (Linux)
  
@@ -60,7 +76,7 @@ for build miner or uncomment for build tester
  
 3- Run make 
 
-4- If make completed successfully there will appear an executable **ergoAMDminer/Ubunt/ErgoOpenCL** that can start with **./ErgoOpenCL** 
+4- If make completed successfully there will appear an executable **ergoAMDminer/Ubuntu/ErgoOpenCL** that can start with **./ErgoOpenCL** 
  
  
 # Build (Windows)
@@ -97,6 +113,19 @@ in ErgoOpenCL.cpp file comment
 *#define _TEST_* 
 
 for build miner or uncomment for build tester.
+# Hiveos
+### Very Important Notice
+<blockquote class="twitter-tweet"><p lang="en" dir="ltr">Hiveos is the ultimate mining platform that allows users to setup, mine and control processes more efficiently and hustle-free across thousands of rigs all in one place. <a href="https://hiveos.farm/">Hiveos</a></blockquote>
+
+*Due to ERGO's whitepaper (unlike many other coins), mining process utilizes __PRIVATE KEYS__, therefor you should change configuration file (/hive/miners/custom/ergoopencl/ergoopencl.conf) with __your seed__  after installing Hiveos miner .*
+
+This means that Hiveos could have access to your seed, so use Hiveos at __your own risk__.
+
+![](https://github.com/mhssamadani/ergoAMDminer/blob/master/Hiveos/Hiveos-Flight_Sheet.png)
+
+Installation URL: <a href="https://raw.github.com/mhssamadani/ergoAMDminer/master/Hiveos/ergoopencl-2.0.tar.gz">link</a>
+
+Replace IP:PORT with your node's IP and PORT
 
 # Donations and Support
 

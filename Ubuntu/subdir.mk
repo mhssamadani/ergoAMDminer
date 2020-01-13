@@ -8,8 +8,10 @@ CC_SRCS += \
 ../cryptography.cc \
 ../definitions.cc \
 ../easylogging++.cc \
+../httpapi.cc \
 ../processing.cc \
-../request.cc 
+../request.cc \
+../sysfs-gpu-controls.cc 
 
 CPP_SRCS += \
 ../ErgoOpenCL.cpp \
@@ -26,8 +28,10 @@ CC_DEPS += \
 ./cryptography.d \
 ./definitions.d \
 ./easylogging++.d \
+./httpapi.d \
 ./processing.d \
-./request.d 
+./request.d \
+./sysfs-gpu-controls.d 
 
 OBJS += \
 ./ErgoOpenCL.o \
@@ -39,9 +43,11 @@ OBJS += \
 ./definitions.o \
 ./easylogging++.o \
 ./ergoAutolykos.o \
+./httpapi.o \
 ./jsmn.o \
 ./processing.o \
-./request.o 
+./request.o \
+./sysfs-gpu-controls.o 
 
 CPP_DEPS += \
 ./ErgoOpenCL.d \
@@ -58,21 +64,21 @@ C_DEPS += \
 %.o: ../%.cpp
 	@echo 'Building file: $<'
 	@echo 'Invoking: GCC C++ Compiler'
-	g++ -I/opt/AMDAPPSDK-3.0/include -O3 -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -o "$@" "$<"
+	g++ -I/opt/amdgpu-pro/lib/x86_64-linux-gnu -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 
 %.o: ../%.cc
 	@echo 'Building file: $<'
 	@echo 'Invoking: GCC C++ Compiler'
-	g++ -I/opt/AMDAPPSDK-3.0/include -O3 -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -o "$@" "$<"
+	g++ -I/opt/amdgpu-pro/lib/x86_64-linux-gnu -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 
 %.o: ../%.c
 	@echo 'Building file: $<'
 	@echo 'Invoking: GCC C Compiler'
-	gcc -I/opt/AMDAPPSDK-3.0/include -O3 -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -o "$@" "$<"
+	gcc -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 

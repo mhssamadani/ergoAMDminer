@@ -31,6 +31,7 @@ int ReadConfig(
     char * skstr,
     char * from,
     char * to,
+	char *  poolUrl,
     int * keep
 )
 {
@@ -86,17 +87,20 @@ int ReadConfig(
         {
             from[0] = '\0';
             to[0] = '\0';
+			poolUrl[0] = '\0';
 
             strncat(
                 from, config.GetTokenStart(t + 1), config.GetTokenLen(t + 1)
             );
-
             strcat(from, "/mining/candidate");
             
             strncat(to, config.GetTokenStart(t + 1), config.GetTokenLen(t + 1));
             strcat(to, "/mining/solution");
 
-            VLOG(1) << "from url " << from  << " to url " << to;
+			strncat(poolUrl, config.GetTokenStart(t + 1), config.GetTokenLen(t + 1));
+			strcat(poolUrl, "/mining/share");
+
+            VLOG(1) << "from url " << from  << " to url " << to << " pool url " << poolUrl;
 
             readNode = 1;
         }

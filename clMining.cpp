@@ -53,6 +53,8 @@ void MiningClass::InitMining(
 void MiningClass::hBlockMining(
 	// boundary for puzzle
 	cl_mem bound,
+	// pool boundary for puzzle
+	cl_mem pbound,
 	// data: pk || mes || w || padding || x || sk || ctx
 	cl_mem data,
 	// nonce base
@@ -62,7 +64,14 @@ void MiningClass::hBlockMining(
 	// results
 	cl_mem res,
 	// indices of valid solutions
-	cl_mem valid
+	cl_mem valid,
+	cl_mem vCount,
+
+	// P results
+	cl_mem Pres,
+	// indices of P valid solutions
+	cl_mem Pvalid,
+	cl_mem pCount
 	)
 {
 	cl_kernel kernel = program->getKernel("BlockMining");
@@ -70,12 +79,17 @@ void MiningClass::hBlockMining(
 	//cout << "\n Running kernel (BlockMining)" << flush;
 
 	cl->checkError(clSetKernelArg(kernel, 0, sizeof(cl_mem), &bound));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), &data));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(cl_ulong), &base));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(cl_mem), &hashes));
-	cl->checkError(clSetKernelArg(kernel, 4, sizeof(cl_mem), &res));
-	cl->checkError(clSetKernelArg(kernel, 5, sizeof(cl_mem), &valid));
+	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), &pbound));
+	cl->checkError(clSetKernelArg(kernel, 2, sizeof(cl_mem), &data));
+	cl->checkError(clSetKernelArg(kernel, 3, sizeof(cl_ulong), &base));
+	cl->checkError(clSetKernelArg(kernel, 4, sizeof(cl_mem), &hashes));
+	cl->checkError(clSetKernelArg(kernel, 5, sizeof(cl_mem), &res));
+	cl->checkError(clSetKernelArg(kernel, 6, sizeof(cl_mem), &valid));
+	cl->checkError(clSetKernelArg(kernel, 7, sizeof(cl_mem), &vCount));
 
+	cl->checkError(clSetKernelArg(kernel, 8, sizeof(cl_mem), &Pres));
+	cl->checkError(clSetKernelArg(kernel, 9, sizeof(cl_mem), &Pvalid));
+	cl->checkError(clSetKernelArg(kernel, 10, sizeof(cl_mem), &pCount));
 
 
 	size_t t1 = ((THREADS_PER_ITER / BLOCK_DIM) + 1) * BLOCK_DIM;

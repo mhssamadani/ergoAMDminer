@@ -3,6 +3,7 @@
 
 //#define CL_USE_DEPRECATED_OPENCL_1_2_APIS
 #include <CL/cl.h>
+#include <CL/cl_ext.h>
 #include <cstdlib>
 #include <cassert>
 #include <iostream>
@@ -87,6 +88,7 @@ private:
 	static std::string getFileContents(std::string filename);
 public:
 	int64_t getDeviceInfoInt64(cl_device_info name);
+	int getDeviceTopology(cl_device_topology_amd *topo);
 };
 
 
