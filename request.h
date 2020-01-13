@@ -49,7 +49,8 @@ int PostPuzzleSolution(
     const char * pkstr,
     const uint8_t * w,
     const uint8_t * nonce,
-    const uint8_t * d
+    const uint8_t * d,
+	bool toPool = false
 );
 
 #endif // REQUEST_H

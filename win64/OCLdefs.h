@@ -27,6 +27,12 @@ typedef unsigned __int64        cl_ulong;
 typedef unsigned __int32        cl_uint;
 #endif
 
+
+
+
+#define MAX_MINER 100
+#define MAX_POOL_RES 10
+
 ////////////////////////////////////////////////////////////////////////////////
 //  PARAMETERS: Autolykos algorithm
 ////////////////////////////////////////////////////////////////////////////////
@@ -58,8 +64,9 @@ typedef unsigned __int32        cl_uint;
 ////////////////////////////////////////////////////////////////////////////////
 // Memory compatibility checks
 // should probably be now more correctly set
-#define MIN_FREE_MEMORY   2690000000
-#define MIN_FREE_MEMORY_PREHASH 7850000000
+#define MIN_FREE_MEMORY    2200000000
+#define MIN_FREE_MEMORY_PREHASH 7300000000
+
 
 ////////////////////////////////////////////////////////////////////////////////
 //  CONSTANTS: Autolykos algorithm
@@ -118,14 +125,18 @@ typedef unsigned __int32        cl_uint;
 //  CURL requests
 //============================================================================//
 // default request capacity
-#define JSON_CAPACITY      256
+#define JSON_CAPACITY      (256 *3)
 
 // maximal request capacity
 #define MAX_JSON_CAPACITY  8192
 
+#define _SENDPool
 // total JSON objects count
-#define REQ_LEN            7
-
+#ifdef _SENDPool
+#define REQ_LEN           9
+#else
+#define REQ_LEN           7
+#endif
 // JSON position of message
 #define MES_POS            2
 

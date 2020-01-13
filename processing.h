@@ -15,6 +15,7 @@ int ReadConfig(
     char * skstr,
     char * from,
     char * to,
+	char * poolurl,
     int * keep
 );
 

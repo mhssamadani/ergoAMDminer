@@ -8,6 +8,7 @@ namespace ch = std::chrono;
 //#define  _TEST_
 int main(int argc, char* argv[])
 {
+
  #ifdef _TEST_
 	ergoTester* eTester = new ergoTester();
 	eTester->testErgo(argc, argv);

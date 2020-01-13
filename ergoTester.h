@@ -120,111 +120,237 @@ int TestSolutions(
 	bool keepPrehash = info->keepPrehash;
 
 	//========================================================================//
+	//  Check GPU memory
+	//========================================================================//
+	size_t freeMem = 0;
+	size_t totalMem = 0;
+
+	cl_ulong max_mem_alloc_size = clw->getDeviceInfoInt64(CL_DEVICE_MAX_MEM_ALLOC_SIZE);
+	cl_ulong mem_size = clw->getDeviceInfoInt64(CL_DEVICE_GLOBAL_MEM_SIZE);
+
+	LOG(INFO) << "GPU " << clw->m_gpuIndex << " mem_size: " << clw->getGlobalSizeMB() << "  (MB) , max_mem_alloc_size: " << clw->getMaxAllocSizeMB() << " (MB) ";
+	size_t uctx_t_count = max_mem_alloc_size / sizeof(uctx_t);
+
+	size_t memCount = (N_LEN / uctx_t_count) + 1;
+	size_t n_len = N_LEN;
+
+	if (max_mem_alloc_size < MIN_FREE_MEMORY)
+	{
+		LOG(ERROR) << "GPU " << clw->m_gpuIndex << " Not enough GPU memory for mining,"
+			<< " minimum 2.8 GiB needed";
+
+		return 0;
+	}
+
+	if (keepPrehash && (memCount > 2 || memCount < 0))
+	{
+		LOG(ERROR) << "GPU " << clw->m_gpuIndex << "C: Error in Memory Alloc for KeepPrehash";
+		keepPrehash = false;
+	}
+
+	//========================================================================//
 	//  Host memory allocation
 	//========================================================================//
 	// hash context
 	// (212 + 4) bytes
 	ctx_t ctx_h;
-	size_t allocatedMem = 0;
 	//========================================================================//
 	//  Device memory allocation
 	//========================================================================//
+	int deviceId = 0;
+	LOG(INFO) << "GPU " << deviceId << " allocating memory";
+	size_t allocatedMem = 0;
+
+	//-------------------------------------------------------------
 	// boundary for puzzle
-	// ~0 MiB
-	//cl_uint * bound_d;
+	// (2 * PK_SIZE_8 + 2 + 4 * NUM_SIZE_8 + 212 + 4) bytes // ~0 MiB
 	cl_mem bound_d = clw->Createbuffer((NUM_SIZE_8 + DATA_SIZE_8) * sizeof(char), CL_MEM_READ_WRITE);
-	cl_uint* hbound_d = (cl_uint *)malloc((NUM_SIZE_8 + DATA_SIZE_8) * sizeof(char));
+	if (bound_d == NULL)
+	{
+		LOG(INFO) << "GPU " << deviceId << "error in  allocating hashbound_des_d";
+		return 0;
+	}
+	cl_uint* hbound_d = (cl_uint*)malloc((NUM_SIZE_8 + DATA_SIZE_8) * sizeof(char));
 	allocatedMem += (NUM_SIZE_8 + DATA_SIZE_8) * sizeof(char);
+	//-------------------------------------------------------------
+	//-------------------------------------------------------------
+	// pool boundary for puzzle
+	// (2 * PK_SIZE_8 + 2 + 4 * NUM_SIZE_8 + 212 + 4) bytes // ~0 MiB
+	cl_mem pbound_d = clw->Createbuffer((NUM_SIZE_8 + DATA_SIZE_8) * sizeof(char), CL_MEM_READ_WRITE);
+	if (pbound_d == NULL)
+	{
+		LOG(INFO) << "GPU " << deviceId << "error in  allocating phashbound_des_d";
+		return 0 ;
+	}
+	cl_uint* hpbound_d = (cl_uint*)malloc((NUM_SIZE_8 + DATA_SIZE_8) * sizeof(char));
+	allocatedMem += (NUM_SIZE_8 + DATA_SIZE_8) * sizeof(char);
+	//-------------------------------------------------------------
+
 	// data: pk || mes || w || padding || x || sk || ctx
-	// (2 * PK_SIZE_8 + 2 + 3 * NUM_SIZE_8 + 212 + 4) bytes // ~0 MiB
-	//aminM  //cl_uint * data_d = bound_d + NUM_SIZE_32;
-	cl_mem data_d = clw->Createbuffer((2 * PK_SIZE_8 + 2 + 3 * NUM_SIZE_8 + 212 + 4)  * sizeof(char), CL_MEM_READ_WRITE);
+	//cl_uint * data_d = bound_d + NUM_SIZE_32;
+	cl_mem data_d = clw->Createbuffer((2 * PK_SIZE_8 + 2 + 3 * NUM_SIZE_8 + 212 + 4) * sizeof(char), CL_MEM_READ_WRITE);
+	if (data_d == NULL)
+	{
+		LOG(INFO) << "GPU " << deviceId << "error in  allocating data_d";
+		return 0;
+	}
 	cl_uint* hdata_d = (cl_uint*)malloc((2 * PK_SIZE_8 + 2 + 3 * NUM_SIZE_8 + 212 + 4) * sizeof(char));
 	allocatedMem += (2 * PK_SIZE_8 + 2 + 3 * NUM_SIZE_8 + 212 + 4) * sizeof(char);
 
 	// precalculated hashes
 	// N_LEN * NUM_SIZE_8 bytes // 2 GiB
-	//cl_uint * hashes_d;
-	cl_mem hashes_d = clw->Createbuffer((cl_uint)N_LEN * NUM_SIZE_8  * sizeof(char) , CL_MEM_READ_WRITE);
+	cl_mem hashes_d = clw->Createbuffer((cl_uint)N_LEN * NUM_SIZE_8 * sizeof(char), CL_MEM_READ_WRITE);
+	if (hashes_d == NULL)
+	{
+		LOG(INFO) << "GPU " << deviceId << "error in  allocating hashes_d";
+		return 0;
+	}
 	allocatedMem += (cl_uint)N_LEN * NUM_SIZE_8 * sizeof(char);
-
 	//cl_uint* hhashes_d = (cl_uint*)malloc((cl_uint)N_LEN * NUM_SIZE_8 * sizeof(char));
-	// WORKSPACE_SIZE_8 bytes
+
+
+	/////////--------------------------------------------------------------------------------------
+	// WORKSPACE_SIZE_8 bytes // depends on macros, now ~512 MiB
 	// potential solutions of puzzle
-	//cl_uint * res_d;
 	cl_mem res_d = clw->Createbuffer((NUM_SIZE_8 + sizeof(cl_uint)) * sizeof(char), CL_MEM_WRITE_ONLY);
+	if (res_d == NULL)
+	{
+		LOG(INFO) << "GPU " << deviceId << "error in  allocating res_d";
+		return 0;
+	}
 	cl_uint* hres_d = (cl_uint*)malloc((NUM_SIZE_8 + sizeof(cl_uint)) * sizeof(char));
 	allocatedMem += (NUM_SIZE_8 + sizeof(cl_uint)) * sizeof(char);
 
 	// indices of unfinalized hashes
 	cl_mem indices_d = clw->Createbuffer(sizeof(cl_uint), CL_MEM_READ_WRITE);
+	if (indices_d == NULL)
+	{
+		LOG(INFO) << "GPU " << deviceId << "error in  allocating indices_d";
+		return 0;
+	}
 	cl_uint* hindices_d = (cl_uint*)malloc(sizeof(cl_uint));
 	allocatedMem += sizeof(cl_uint);
 
-	//uctx_t * uctxs_d = NULL;
+	memset(hindices_d, 0, sizeof(cl_uint));
+	clw->CopyBuffer(indices_d, hindices_d, sizeof(cl_uint), false);
 
-	cl_ulong max_mem_alloc_size = clw->getDeviceInfoInt64(CL_DEVICE_MAX_MEM_ALLOC_SIZE);
-	cl_ulong mem_size = clw->getDeviceInfoInt64(CL_DEVICE_GLOBAL_MEM_SIZE);
-	LOG(INFO) <<"GPU " << clw->m_gpuIndex << " mem_size: " << clw->getGlobalSizeMB() << "  (MB) , max_mem_alloc_size: " << clw->getMaxAllocSizeMB() << " (MB) "; 
-	size_t uctx_t_count = max_mem_alloc_size / sizeof(uctx_t);
+	cl_mem count_d = clw->Createbuffer(sizeof(cl_uint), CL_MEM_READ_WRITE);
+	if (count_d == NULL)
+	{
+		LOG(INFO) << "GPU " << deviceId << "error in  allocating count_d";
+		return 0;
+	}
 
-	size_t memCount = (N_LEN / uctx_t_count) + 1;
-	size_t n_len = N_LEN;
+	cl_uint* hcount_d = (cl_uint*)malloc(sizeof(cl_uint));
+	allocatedMem += sizeof(cl_uint);
+
+	memset(hcount_d, 0, sizeof(cl_uint));
+	clw->CopyBuffer(count_d, hcount_d, sizeof(cl_uint), false);
+
+	/////////--------------------------------------------------------------------------------------
+
+	/////////--------------------------------------------------------------------------------------
+	// WORKSPACE_SIZE_8 bytes // depends on macros, now ~512 MiB
+	// potential solutions of puzzle
+	size_t www = WORKSPACE_SIZE_8;
+	cl_mem Pres_d = clw->Createbuffer(((NUM_SIZE_8 + sizeof(cl_uint))*MAX_POOL_RES) * sizeof(char), CL_MEM_WRITE_ONLY);
+	if (Pres_d == NULL)
+	{
+		LOG(INFO) << "GPU " << deviceId << "error in  allocating Pres_d";
+		return 0;
+	}
+	cl_uint* hPres_d = (cl_uint*)malloc(((NUM_SIZE_8 + sizeof(cl_uint))*MAX_POOL_RES) * sizeof(char));
+	allocatedMem += ((NUM_SIZE_8 + sizeof(cl_uint))*MAX_POOL_RES);
+
+	// indices of ..........
+	cl_mem Pindices_d = clw->Createbuffer(MAX_POOL_RES*sizeof(cl_uint), CL_MEM_READ_WRITE);
+	if (Pindices_d == NULL)
+	{
+		LOG(INFO) << "GPU " << deviceId << "error in  allocating Pindices_d";
+		return 0;
+	}
+	cl_uint* hPindices_d = (cl_uint*)malloc(MAX_POOL_RES*sizeof(cl_uint));
+	allocatedMem += (MAX_POOL_RES*sizeof(cl_uint));
+
+	memset(hPindices_d, 0, MAX_POOL_RES*sizeof(cl_uint));
+	clw->CopyBuffer(Pindices_d, hPindices_d, MAX_POOL_RES*sizeof(cl_uint), false);
+	cl_mem pResCount_d = clw->Createbuffer(sizeof(cl_uint), CL_MEM_READ_WRITE);
+	if (pResCount_d == NULL)
+	{
+		LOG(INFO) << "GPU " << deviceId << "error in  allocating pResCount_d";
+		return 0;
+	}
+
+	cl_uint* hpResCount_d = (cl_uint*)malloc(sizeof(cl_uint));
+	allocatedMem += sizeof(cl_uint);
+
+	memset(hpResCount_d, 0, sizeof(cl_uint));
+	clw->CopyBuffer(pResCount_d, hpResCount_d, sizeof(cl_uint), false);
+
+	/////////--------------------------------------------------------------------------------------
+
+
+
+
+	// unfinalized hash contexts
+	// if keepPrehash == true // N_LEN * 80 bytes // 5 GiB
 	cl_mem uctxs_d[100];
-	//uctx_t* huctxs_d[100];
 	cl_ulong memSize[100];
 	uctxs_d[0] = uctxs_d[1] = NULL;
-	if (info->keepPrehash)
+	if (keepPrehash)
 	{
 		size_t preS = (cl_uint)N_LEN * sizeof(uctx_t);
-		if(memCount > 2 || memCount < 0 )
+		if (memCount > 2 || memCount < 0)
 		{
 			LOG(INFO) << "C: Error in Memory Alloc for KeepPrehash";
 			keepPrehash = false;
 
 		}
-		else if ( (allocatedMem + preS) < mem_size)
+		else if ((allocatedMem + preS) < mem_size)
 		{
 
 			size_t last = N_LEN % uctx_t_count;
 			size_t sz = 0;
-			for (size_t i = 0; i < memCount ; i++)
+			for (size_t i = 0; i < memCount; i++)
 			{
 				if (i == memCount - 1)
 				{
 					uctxs_d[i] = clw->Createbuffer(last * sizeof(uctx_t), CL_MEM_READ_WRITE);
 					//huctxs_d[i] = (uctx_t*)malloc(last);
-					memSize[i] = i * uctx_t_count  + last;
+					memSize[i] = i * uctx_t_count + last;
 				}
 				else
 				{
 					uctxs_d[i] = clw->Createbuffer(uctx_t_count * sizeof(uctx_t), CL_MEM_READ_WRITE);
 					//huctxs_d[i] = (uctx_t*)malloc(uctx_t_count * sizeof(uctx_t));
-					memSize[i] = i*uctx_t_count + uctx_t_count;
+					memSize[i] = i * uctx_t_count + uctx_t_count;
 				}
 				if (uctxs_d[i] == NULL)
 				{
 					LOG(INFO) << "A: Error in Memory Alloc for KeepPrehash";
 					keepPrehash = false;
 				}
-				
+
 			}
 		}
 		else
 		{
-					LOG(INFO) << "B: Error in Memory Alloc for KeepPrehash";
-					keepPrehash = false;
+			LOG(INFO) << "B: Error in Memory Alloc for KeepPrehash";
+			keepPrehash = false;
 
 		}
-	
-	}
 
+	}
 
 	//========================================================================//
 	//  Data transfer form host to device
 	//========================================================================//
 	// copy boundary
 	memcpy(hbound_d, (void*)info->bound, NUM_SIZE_8);
+
+	// copy Pboundary
+	memcpy(hpbound_d, (void*)info->poolbound, NUM_SIZE_8);
+
 
 	//// copy public key
 	memcpy(hdata_d, (void*)info->pk, PK_SIZE_8);
@@ -246,7 +372,8 @@ int TestSolutions(
 
 
 	cl_int ret = clw->CopyBuffer(bound_d, hbound_d, (NUM_SIZE_8 + DATA_SIZE_8) * sizeof(char), false);
-	clw->CopyBuffer(data_d, hdata_d, (2 * PK_SIZE_8 + 2 + 3 * NUM_SIZE_8 + 212 + 4) * sizeof(char), false);
+	ret = clw->CopyBuffer(pbound_d, hpbound_d, (NUM_SIZE_8 + DATA_SIZE_8) * sizeof(char), false);
+	ret = clw->CopyBuffer(data_d, hdata_d, (2 * PK_SIZE_8 + 2 + 3 * NUM_SIZE_8 + 212 + 4) * sizeof(char), false);
 	////========================================================================//
 	////  Test solutions
 	////========================================================================//
@@ -284,8 +411,15 @@ int TestSolutions(
 	memcpy(hdata_d + COUPLED_PK_SIZE_32 + 3 * NUM_SIZE_32, &ctx_h, sizeof(ctx_t));
 	ret = clw->CopyBuffer(data_d, hdata_d, (2 * PK_SIZE_8 + 2 + 3 * NUM_SIZE_8 + 212 + 4) * sizeof(char), false);
 
+	memset(hcount_d, 0, sizeof(cl_uint));
+	clw->CopyBuffer(count_d, hcount_d, sizeof(cl_uint), false);
+	memset(hpResCount_d, 0, sizeof(cl_uint));
+	clw->CopyBuffer(pResCount_d, hpResCount_d, sizeof(cl_uint), false);
+	memset(hPindices_d, 0, MAX_POOL_RES*sizeof(cl_uint));
+	clw->CopyBuffer(Pindices_d, hPindices_d, MAX_POOL_RES*sizeof(cl_uint), false);
+
 	//// calculate solution candidates
-	min->hBlockMining(bound_d, data_d, base, hashes_d, res_d, indices_d);
+	min->hBlockMining(bound_d, pbound_d, data_d, base, hashes_d, res_d, indices_d, count_d, Pres_d, Pindices_d, pResCount_d);
 
 
 	uint64_t res_h[NUM_SIZE_64];
@@ -302,6 +436,32 @@ int TestSolutions(
 		exit(EXIT_FAILURE);
 	}
 	
+
+	cl_uint countOfP = 0;
+	ret = clw->CopyBuffer(pResCount_d, &countOfP, sizeof(cl_uint), true);
+
+	uint32_t tt[NUM_SIZE_32];
+	if (countOfP) //pool
+	{
+		ret = clw->CopyBuffer(Pres_d, hPres_d, ((NUM_SIZE_8 + sizeof(cl_uint))*MAX_POOL_RES)* sizeof(char), true);
+		ret = clw->CopyBuffer(Pindices_d, hPindices_d, MAX_POOL_RES*sizeof(cl_uint), true);
+
+		for (int pj = 0; pj < countOfP; pj++)
+		{
+			for (int i = 0; i < NUM_SIZE_32; ++i)
+			{
+				tt[i] = hPres_d[pj * NUM_SIZE_32 + i];
+			}
+
+			uint64_t *tt2 = (uint64_t *)tt;
+			int abc;
+			abc = 0;
+
+		}
+	}
+
+
+
 	////========================================================================//
 	////  Device memory deallocation
 	////========================================================================//
@@ -338,51 +498,231 @@ int TestPerformance(
 	//========================================================================//
 	// hash context
 	ctx_t ctx_h;
+	bool keepPrehash = info->keepPrehash;
+	//========================================================================//
+	//  Check GPU memory
+	//========================================================================//
+	size_t freeMem = 0;
+	size_t totalMem = 0;
+
+	cl_ulong max_mem_alloc_size = clw->getDeviceInfoInt64(CL_DEVICE_MAX_MEM_ALLOC_SIZE);
+	cl_ulong mem_size = clw->getDeviceInfoInt64(CL_DEVICE_GLOBAL_MEM_SIZE);
+
+	LOG(INFO) << "GPU " << clw->m_gpuIndex << " mem_size: " << clw->getGlobalSizeMB() << "  (MB) , max_mem_alloc_size: " << clw->getMaxAllocSizeMB() << " (MB) ";
+	size_t uctx_t_count = max_mem_alloc_size / sizeof(uctx_t);
+
+	size_t memCount = (N_LEN / uctx_t_count) + 1;
+	size_t n_len = N_LEN;
+
+	if (max_mem_alloc_size < MIN_FREE_MEMORY)
+	{
+		LOG(ERROR) << "GPU " << clw->m_gpuIndex << " Not enough GPU memory for mining,"
+			<< " minimum 2.8 GiB needed";
+
+		return 0;
+	}
+
+	if (keepPrehash && (memCount > 2 || memCount < 0))
+	{
+		LOG(ERROR) << "GPU " << clw->m_gpuIndex << "C: Error in Memory Alloc for KeepPrehash";
+		keepPrehash = false;
+	}
 
 	//========================================================================//
 	//  Device memory allocation
 	//========================================================================//
+	int deviceId = 0;
+	LOG(INFO) << "GPU " << deviceId << " allocating memory";
+	size_t allocatedMem = 0;
+
+	//-------------------------------------------------------------
 	// boundary for puzzle
-	// ~0 MiB
-	//cl_uint * bound_d;
+	// (2 * PK_SIZE_8 + 2 + 4 * NUM_SIZE_8 + 212 + 4) bytes // ~0 MiB
 	cl_mem bound_d = clw->Createbuffer((NUM_SIZE_8 + DATA_SIZE_8) * sizeof(char), CL_MEM_READ_WRITE);
+	if (bound_d == NULL)
+	{
+		LOG(INFO) << "GPU " << deviceId << "error in  allocating hashbound_des_d";
+		return 0;
+	}
 	cl_uint* hbound_d = (cl_uint*)malloc((NUM_SIZE_8 + DATA_SIZE_8) * sizeof(char));
+	allocatedMem += (NUM_SIZE_8 + DATA_SIZE_8) * sizeof(char);
+	//-------------------------------------------------------------
+	//-------------------------------------------------------------
+	// pool boundary for puzzle
+	// (2 * PK_SIZE_8 + 2 + 4 * NUM_SIZE_8 + 212 + 4) bytes // ~0 MiB
+	cl_mem pbound_d = clw->Createbuffer((NUM_SIZE_8 + DATA_SIZE_8) * sizeof(char), CL_MEM_READ_WRITE);
+	if (pbound_d == NULL)
+	{
+		LOG(INFO) << "GPU " << deviceId << "error in  allocating phashbound_des_d";
+		return 0;
+	}
+	cl_uint* hpbound_d = (cl_uint*)malloc((NUM_SIZE_8 + DATA_SIZE_8) * sizeof(char));
+	allocatedMem += (NUM_SIZE_8 + DATA_SIZE_8) * sizeof(char);
+	//-------------------------------------------------------------
+
 	// data: pk || mes || w || padding || x || sk || ctx
-	// (2 * PK_SIZE_8 + 2 + 3 * NUM_SIZE_8 + 212 + 4) bytes // ~0 MiB
-	//aminM  //cl_uint * data_d = bound_d + NUM_SIZE_32;
+	//cl_uint * data_d = bound_d + NUM_SIZE_32;
 	cl_mem data_d = clw->Createbuffer((2 * PK_SIZE_8 + 2 + 3 * NUM_SIZE_8 + 212 + 4) * sizeof(char), CL_MEM_READ_WRITE);
+	if (data_d == NULL)
+	{
+		LOG(INFO) << "GPU " << deviceId << "error in  allocating data_d";
+		return 0;
+	}
 	cl_uint* hdata_d = (cl_uint*)malloc((2 * PK_SIZE_8 + 2 + 3 * NUM_SIZE_8 + 212 + 4) * sizeof(char));
+	allocatedMem += (2 * PK_SIZE_8 + 2 + 3 * NUM_SIZE_8 + 212 + 4) * sizeof(char);
+
 	// precalculated hashes
 	// N_LEN * NUM_SIZE_8 bytes // 2 GiB
-	//cl_uint * hashes_d;
 	cl_mem hashes_d = clw->Createbuffer((cl_uint)N_LEN * NUM_SIZE_8 * sizeof(char), CL_MEM_READ_WRITE);
+	if (hashes_d == NULL)
+	{
+		LOG(INFO) << "GPU " << deviceId << "error in  allocating hashes_d";
+		return 0;
+	}
+	allocatedMem += (cl_uint)N_LEN * NUM_SIZE_8 * sizeof(char);
 	//cl_uint* hhashes_d = (cl_uint*)malloc((cl_uint)N_LEN * NUM_SIZE_8 * sizeof(char));
-	// WORKSPACE_SIZE_8 bytes
+
+
+	/////////--------------------------------------------------------------------------------------
+	// WORKSPACE_SIZE_8 bytes // depends on macros, now ~512 MiB
 	// potential solutions of puzzle
-	//cl_uint * res_d;
-	cl_mem res_d = clw->Createbuffer((cl_uint)WORKSPACE_SIZE_8 * sizeof(char), CL_MEM_WRITE_ONLY);
-	cl_uint* hres_d = (cl_uint*)malloc((cl_uint)WORKSPACE_SIZE_8 * sizeof(char));
+	cl_mem res_d = clw->Createbuffer((NUM_SIZE_8 + sizeof(cl_uint)) * sizeof(char), CL_MEM_WRITE_ONLY);
+	if (res_d == NULL)
+	{
+		LOG(INFO) << "GPU " << deviceId << "error in  allocating res_d";
+		return 0;
+	}
+	cl_uint* hres_d = (cl_uint*)malloc((NUM_SIZE_8 + sizeof(cl_uint)) * sizeof(char));
+	allocatedMem += (NUM_SIZE_8 + sizeof(cl_uint)) * sizeof(char);
+
 	// indices of unfinalized hashes
 	cl_mem indices_d = clw->Createbuffer(sizeof(cl_uint), CL_MEM_READ_WRITE);
-	cl_uint* hindices_d = (cl_uint*)malloc(sizeof(cl_uint));
-	//uctx_t * uctxs_d = NULL;
-	cl_mem uctxs_d;
-	uctx_t* huctxs_d;
-	if (info->keepPrehash)
+	if (indices_d == NULL)
 	{
-		uctxs_d = clw->Createbuffer((cl_uint)N_LEN * sizeof(uctx_t), CL_MEM_READ_WRITE);
-		huctxs_d = (uctx_t*)malloc((cl_uint)N_LEN * sizeof(uctx_t));
+		LOG(INFO) << "GPU " << deviceId << "error in  allocating indices_d";
+		return 0;
+	}
+	cl_uint* hindices_d = (cl_uint*)malloc(sizeof(cl_uint));
+	allocatedMem += sizeof(cl_uint);
+
+	memset(hindices_d, 0, sizeof(cl_uint));
+	clw->CopyBuffer(indices_d, hindices_d, sizeof(cl_uint), false);
+
+	cl_mem count_d = clw->Createbuffer(sizeof(cl_uint), CL_MEM_READ_WRITE);
+	if (count_d == NULL)
+	{
+		LOG(INFO) << "GPU " << deviceId << "error in  allocating count_d";
+		return 0;
 	}
 
-	cl_mem ldata = clw->Createbuffer((cl_uint)118 * sizeof(uctx_t), CL_MEM_READ_WRITE);
-	cl_uint* hldata = (cl_uint*)malloc((cl_uint)118 * sizeof(uctx_t));
+	cl_uint* hcount_d = (cl_uint*)malloc(sizeof(cl_uint));
+	allocatedMem += sizeof(cl_uint);
+
+	memset(hcount_d, 0, sizeof(cl_uint));
+	clw->CopyBuffer(count_d, hcount_d, sizeof(cl_uint), false);
+
+	/////////--------------------------------------------------------------------------------------
+
+	/////////--------------------------------------------------------------------------------------
+	// WORKSPACE_SIZE_8 bytes // depends on macros, now ~512 MiB
+	// potential solutions of puzzle
+	size_t www = WORKSPACE_SIZE_8;
+	cl_mem Pres_d = clw->Createbuffer(((NUM_SIZE_8 + sizeof(cl_uint))*MAX_POOL_RES) * sizeof(char), CL_MEM_WRITE_ONLY);
+	if (Pres_d == NULL)
+	{
+		LOG(INFO) << "GPU " << deviceId << "error in  allocating Pres_d";
+		return 0;
+	}
+	cl_uint* hPres_d = (cl_uint*)malloc(((NUM_SIZE_8 + sizeof(cl_uint))*MAX_POOL_RES) * sizeof(char));
+	allocatedMem += ((NUM_SIZE_8 + sizeof(cl_uint))*MAX_POOL_RES);
+
+	// indices of ..........
+	cl_mem Pindices_d = clw->Createbuffer(MAX_POOL_RES*sizeof(cl_uint), CL_MEM_READ_WRITE);
+	if (Pindices_d == NULL)
+	{
+		LOG(INFO) << "GPU " << deviceId << "error in  allocating Pindices_d";
+		return 0;
+	}
+	cl_uint* hPindices_d = (cl_uint*)malloc(MAX_POOL_RES*sizeof(cl_uint));
+	allocatedMem += (MAX_POOL_RES*sizeof(cl_uint));
+
+	memset(hPindices_d, 0, MAX_POOL_RES*sizeof(cl_uint));
+	clw->CopyBuffer(Pindices_d, hPindices_d, MAX_POOL_RES*sizeof(cl_uint), false);
+
+	cl_mem pResCount_d = clw->Createbuffer(sizeof(cl_uint), CL_MEM_READ_WRITE);
+	if (pResCount_d == NULL)
+	{
+		LOG(INFO) << "GPU " << deviceId << "error in  allocating pResCount_d";
+		return 0;
+	}
+
+	cl_uint* hpResCount_d = (cl_uint*)malloc(sizeof(cl_uint));
+	allocatedMem += sizeof(cl_uint);
 
 
+	memset(hpResCount_d, 0, sizeof(cl_uint));
+	clw->CopyBuffer(pResCount_d, hpResCount_d, sizeof(cl_uint), false);
+	/////////--------------------------------------------------------------------------------------
+
+
+
+
+	// unfinalized hash contexts
+	// if keepPrehash == true // N_LEN * 80 bytes // 5 GiB
+	cl_mem uctxs_d[100];
+	cl_ulong memSize[100];
+	uctxs_d[0] = uctxs_d[1] = NULL;
+	if (keepPrehash)
+	{
+		size_t preS = (cl_uint)N_LEN * sizeof(uctx_t);
+		if (memCount > 2 || memCount < 0)
+		{
+			LOG(INFO) << "C: Error in Memory Alloc for KeepPrehash";
+			keepPrehash = false;
+
+		}
+		else if ((allocatedMem + preS) < mem_size)
+		{
+
+			size_t last = N_LEN % uctx_t_count;
+			size_t sz = 0;
+			for (size_t i = 0; i < memCount; i++)
+			{
+				if (i == memCount - 1)
+				{
+					uctxs_d[i] = clw->Createbuffer(last * sizeof(uctx_t), CL_MEM_READ_WRITE);
+					//huctxs_d[i] = (uctx_t*)malloc(last);
+					memSize[i] = i * uctx_t_count + last;
+				}
+				else
+				{
+					uctxs_d[i] = clw->Createbuffer(uctx_t_count * sizeof(uctx_t), CL_MEM_READ_WRITE);
+					//huctxs_d[i] = (uctx_t*)malloc(uctx_t_count * sizeof(uctx_t));
+					memSize[i] = i * uctx_t_count + uctx_t_count;
+				}
+				if (uctxs_d[i] == NULL)
+				{
+					LOG(INFO) << "A: Error in Memory Alloc for KeepPrehash";
+					keepPrehash = false;
+				}
+
+			}
+		}
+		else
+		{
+			LOG(INFO) << "B: Error in Memory Alloc for KeepPrehash";
+			keepPrehash = false;
+
+		}
+
+	}
 	//========================================================================//
 	//  Data transfer form host to device
 	//========================================================================//
 	// copy boundary
 	memcpy(hbound_d, (void*)info->bound, NUM_SIZE_8);
+
+	memcpy(hpbound_d, (void*)info->poolbound, NUM_SIZE_8);
 
 	//// copy public key
 	memcpy(hdata_d, (void*)info->pk, PK_SIZE_8);
@@ -451,8 +791,16 @@ int TestPerformance(
 	for (; ms.count() < 60000; ++iter)
 	{
 
+		memset(hcount_d, 0, sizeof(cl_uint));
+		clw->CopyBuffer(count_d, hcount_d, sizeof(cl_uint), false);
+		memset(hpResCount_d, 0, sizeof(cl_uint));
+		clw->CopyBuffer(pResCount_d, hpResCount_d, sizeof(cl_uint), false);
+		memset(hPindices_d, 0, MAX_POOL_RES*sizeof(cl_uint));
+		clw->CopyBuffer(Pindices_d, hPindices_d, MAX_POOL_RES*sizeof(cl_uint), false);
+
 		//// calculate solution candidates
-		min->hBlockMining(bound_d, data_d, base, hashes_d, res_d, indices_d);
+		min->hBlockMining(bound_d, pbound_d, data_d, base, hashes_d, res_d, indices_d, count_d, Pres_d, Pindices_d, pResCount_d);
+
 
 		ret = clw->CopyBuffer(indices_d, &nonce, sizeof(cl_uint), true);
 
@@ -478,7 +826,7 @@ int TestPerformance(
 
 	if (info->keepPrehash)
 	{
-		clReleaseMemObject(uctxs_d);
+//		clReleaseMemObject(uctxs_d);
 	}
 
 	LOG(INFO) << "Found " << sum << " solutions";
@@ -564,7 +912,7 @@ void TestRequests()
 	);
 	GeneratePublicKey(testinfo.skstr, testinfo.pkstr, testinfo.pk);
 
-	char shortrequest[] = "{ \"msg\" : \"46b7e\", \"b\" : 2134,  \"pk\" : \"0395"
+	char shortrequest[] = "{ \"msg\" : \"46b7e\", \"b\" : 2134, , \"pb\" : 2134,  \"pk\" : \"0395"
 		"f8d54fdd5edb7eeab3228c952d39f5e60d048178f94ac992d4"
 		"f76a6dce4c71\"  }";
 	char brokenrequest[] = " \"msg\"  \"46b7e\", \"b\" : 2134,  \"pk\" : \"0395f8"
@@ -687,6 +1035,12 @@ int testErgo(int argc, char* argv[])
 	((cl_ulong *)info.bound)[1] = 0xFFFFFFFFFFFFFFFF;
 	((cl_ulong *)info.bound)[2] = 0xFFFFFFFFFFFFFFFF;
 	((uint64_t*)info.bound)[3] = 0x000002FFFFFFFFFF;
+
+	((cl_ulong *)info.poolbound)[0] = 0x0;
+	((cl_ulong *)info.poolbound)[1] = 0x0;
+	((cl_ulong *)info.poolbound)[2] = 0x0;
+	((cl_ulong *)info.poolbound)[3] = 0x0;
+
 
 	((cl_ulong *)info.mes)[0] = 1;
 	((cl_ulong *)info.mes)[1] = 0;

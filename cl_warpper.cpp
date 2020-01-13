@@ -426,9 +426,17 @@ std::shared_ptr<CLProgram> CLWarpper::buildProgramFromFile(const char *filename,
 }
 
 int64_t CLWarpper::getDeviceInfoInt64(cl_device_info name) {
+
 	cl_ulong value = 0;
 	clGetDeviceInfo(device, name, sizeof(cl_ulong), &value, 0);
 	return static_cast<int64_t>(value);
+}
+
+int CLWarpper::getDeviceTopology(cl_device_topology_amd *topo) {
+
+
+	int status = clGetDeviceInfo(device, CL_DEVICE_TOPOLOGY_AMD, sizeof(cl_device_topology_amd), topo, 0);
+	return status;
 }
 
 
