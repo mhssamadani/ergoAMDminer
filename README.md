@@ -113,6 +113,10 @@ in ErgoOpenCL.cpp file comment
 *#define _TEST_* 
 
 for build miner or uncomment for build tester.
+
+# Http info
+Miner has a HTTP info page located at `http://miningnode:36207` in json format which shows status of gpus (hashrate, fan speed, temp, ...)
+
 # Hiveos
 ### Very Important Notice
 <blockquote class="twitter-tweet"><p lang="en" dir="ltr">Hiveos is the ultimate mining platform that allows users to setup, mine and control processes more efficiently and hustle-free across thousands of rigs all in one place. <a href="https://hiveos.farm/">Hiveos</a></blockquote>
