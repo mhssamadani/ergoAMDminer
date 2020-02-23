@@ -121,7 +121,7 @@ Miner has a HTTP info page located at `http://miningnode:36207` in json format w
 ### Very Important Notice
 <blockquote class="twitter-tweet"><p lang="en" dir="ltr">Hiveos is the ultimate mining platform that allows users to setup, mine and control processes more efficiently and hustle-free across thousands of rigs all in one place. <a href="https://hiveos.farm/">Hiveos</a></blockquote>
 
-*Due to ERGO's whitepaper (unlike many other coins), mining process utilizes __PRIVATE KEYS__, therefor you should change configuration file (/hive/miners/custom/ergoopencl/ergoopencl.conf) with __your seed__  after installing Hiveos miner .*
+*Due to ERGO's whitepaper (unlike many other coins), mining process utilizes __PRIVATE KEYS__, therefor you should change configuration file (/hive/miners/custom/ergoopencl/ergoopencl.conf) with __your seed and mnemonicpass__  after installing Hiveos miner .*
 
 This means that Hiveos could have access to your seed, so use Hiveos at __your own risk__.
 
