@@ -55,7 +55,7 @@ These files must be in the same folder as Executable file:
  
  1- AMD graphic card with driver installed
  
- 2 - Download and Install [AMD APK](amd-dev.wpengine.netdna-cdn.com/app-sdk/installers/APPSDKInstaller/3.0.130.135-GA/full/AMD-APP-SDKInstaller-v3.0.130.135-GA-windows-F-x64.exe)
+ 2 - Download and Install [AMD APP SDK](https://www.softpedia.com/get/Programming/SDK-DDK/ATI-Stream-SDK.shtml)
  
  3 - Build libcurl from sources with Visual Studio [toolchain instruction](https://medium.com/@chuy.max/compile-libcurl-on-windows-with-visual-studio-2017-x64-and-ssl-winssl-cff41ac7971d) 
  
