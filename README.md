@@ -1,3 +1,6 @@
+# This miner will be deprecated due to incomming fork of ergoplatform
+new miners for Autolykos v2 can be found here:
+[AMD Miner](https://github.com/mhssamadani/Autolykos2_AMD_Miner), [Nvidia Miner](https://github.com/mhssamadani/Autolykos2_NV_Miner)
 # ergoAMDminer
 OpenCL miner for [ergoplatform.com](https://github.com/ergoplatform)
 
